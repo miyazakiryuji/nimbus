@@ -74,6 +74,9 @@ export function normalizeSdkMessage(
     }
 
     case 'user': {
+      // resume 時の履歴リプレイ（SDKUserMessageReplay, isReplay: true）は
+      // 新規イベントとして再流出させない（履歴表示は Step 3 の永続化層が担う）
+      if ('isReplay' in msg && msg.isReplay) return []
       // ツール実行結果は user ロールの tool_result ブロックとして流れてくる
       if (msg.parent_tool_use_id !== null) return []
       const content = msg.message.content
@@ -95,32 +98,30 @@ export function normalizeSdkMessage(
     }
 
     case 'result': {
-      const common = {
-        kind: 'turn-result' as const,
-        sessionId,
-        timestamp,
-        subtype: msg.subtype,
-        isError: msg.is_error,
-        numTurns: msg.num_turns,
-        durationMs: msg.duration_ms
-      }
-      if (msg.subtype === 'success') {
-        return [
-          {
-            ...common,
-            // 実測仕様: streaming input セッションでは「その時点までの累積値」
-            totalCostUsd: msg.total_cost_usd,
-            usage: {
-              inputTokens: msg.usage.input_tokens,
-              outputTokens: msg.usage.output_tokens,
-              cacheCreationInputTokens: msg.usage.cache_creation_input_tokens ?? undefined,
-              cacheReadInputTokens: msg.usage.cache_read_input_tokens ?? undefined
-            },
-            resultText: msg.result
-          }
-        ]
-      }
-      return [{ ...common }]
+      // sdk.d.ts 実測: total_cost_usd / usage は success・error 両サブタイプで必須。
+      // totalCostUsd は「その時点までの累積」（クラッシュ時はゼロの場合あり→消費側で単調ガード）。
+      // usage は per-turn かつメインループのみ（累積ではない。正確な集計は modelUsage を使う）
+      return [
+        {
+          kind: 'turn-result',
+          sessionId,
+          timestamp,
+          subtype: msg.subtype,
+          isError: msg.is_error,
+          numTurns: msg.num_turns,
+          durationMs: msg.duration_ms,
+          totalCostUsd: msg.total_cost_usd,
+          usage: msg.usage
+            ? {
+                inputTokens: msg.usage.input_tokens,
+                outputTokens: msg.usage.output_tokens,
+                cacheCreationInputTokens: msg.usage.cache_creation_input_tokens ?? undefined,
+                cacheReadInputTokens: msg.usage.cache_read_input_tokens ?? undefined
+              }
+            : undefined,
+          resultText: msg.subtype === 'success' ? msg.result : undefined
+        }
+      ]
     }
 
     default:

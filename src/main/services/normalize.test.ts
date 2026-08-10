@@ -189,6 +189,49 @@ describe('normalizeSdkMessage', () => {
     })
   })
 
+  it('result/エラー系でも累積コストと usage を写像する（過少表示の防止）', () => {
+    const events = normalizeSdkMessage(
+      asSdk({
+        type: 'result',
+        subtype: 'error_during_execution',
+        is_error: true,
+        num_turns: 3,
+        duration_ms: 500,
+        total_cost_usd: 0.9,
+        usage: { input_tokens: 10, output_tokens: 5 },
+        session_id: 's',
+        uuid: 'u'
+      }),
+      SESSION_ID,
+      now
+    )
+    expect(events[0]).toMatchObject({
+      kind: 'turn-result',
+      isError: true,
+      totalCostUsd: 0.9,
+      usage: { inputTokens: 10, outputTokens: 5 }
+    })
+    expect(events[0]).not.toHaveProperty('resultText', expect.anything())
+  })
+
+  it('resume 時の履歴リプレイ（isReplay: true）は再流出させない', () => {
+    const events = normalizeSdkMessage(
+      asSdk({
+        type: 'user',
+        isReplay: true,
+        parent_tool_use_id: null,
+        session_id: 's',
+        message: {
+          role: 'user',
+          content: [{ type: 'tool_result', tool_use_id: 'tu_old', content: 'old result' }]
+        }
+      }),
+      SESSION_ID,
+      now
+    )
+    expect(events).toEqual([])
+  })
+
   it('未知のメッセージ種別は空配列（無視）', () => {
     expect(normalizeSdkMessage(asSdk({ type: 'stream_event' }), SESSION_ID, now)).toEqual([])
     expect(normalizeSdkMessage(asSdk({ type: 'task_progress' }), SESSION_ID, now)).toEqual([])

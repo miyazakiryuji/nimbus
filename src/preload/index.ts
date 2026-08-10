@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { IpcRendererEvent } from 'electron'
 import {
   IPC_CHANNELS,
+  type SessionCloseRequest,
   type SessionCreateRequest,
   type SessionCreateResponse,
   type SessionInterruptRequest,
@@ -20,7 +21,9 @@ const nimbus = {
       ipcRenderer.invoke(IPC_CHANNELS.sessionSend, req),
     interrupt: (req: SessionInterruptRequest): Promise<{ ok: boolean }> =>
       ipcRenderer.invoke(IPC_CHANNELS.sessionInterrupt, req),
-    list: (): Promise<unknown[]> => ipcRenderer.invoke(IPC_CHANNELS.sessionList),
+    close: (req: SessionCloseRequest): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.sessionClose, req),
+    list: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.sessionList),
     onEvent: (callback: (event: unknown) => void): (() => void) => {
       const listener = (_event: IpcRendererEvent, payload: unknown): void => callback(payload)
       ipcRenderer.on(IPC_CHANNELS.sessionEvent, listener)

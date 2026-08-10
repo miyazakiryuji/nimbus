@@ -73,8 +73,9 @@ export const nimbusEventSchema = z.discriminatedUnion('kind', [
     isError: z.boolean(),
     preview: z.string()
   }),
-  // SDK result メッセージ由来。totalCostUsd / usage は
-  // 「そのセッション（query() 呼び出し）のその時点までの累積値」（sdk.d.ts 実測仕様）
+  // SDK result メッセージ由来（sdk.d.ts 実測仕様）:
+  // - totalCostUsd: セッション内累積（クラッシュ系はゼロあり→消費側で単調ガード）
+  // - usage: そのターンのみ・メインループのみ（累積ではない。正確な集計は将来 modelUsage を使う）
   z.object({
     ...base,
     kind: z.literal('turn-result'),

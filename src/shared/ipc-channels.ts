@@ -7,6 +7,7 @@ export const IPC_CHANNELS = {
   sessionCreate: 'nimbus:session:create',
   sessionSend: 'nimbus:session:send',
   sessionInterrupt: 'nimbus:session:interrupt',
+  sessionClose: 'nimbus:session:close',
   sessionList: 'nimbus:session:list',
   /** main → renderer への正規化イベント push */
   sessionEvent: 'nimbus:session:event'
@@ -27,5 +28,8 @@ export interface SessionSendRequest {
   text: string
 }
 export interface SessionInterruptRequest {
+  sessionId: string
+}
+export interface SessionCloseRequest {
   sessionId: string
 }

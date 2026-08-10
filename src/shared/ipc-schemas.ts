@@ -14,3 +14,7 @@ export const sessionSendRequestSchema = z.object({
 export const sessionInterruptRequestSchema = z.object({
   sessionId: z.string().uuid()
 })
+
+export const sessionCloseRequestSchema = z.object({
+  sessionId: z.string().uuid()
+})

@@ -26,6 +26,11 @@ export interface CreateSessionInput {
   resumeClaudeSessionId?: string
 }
 
+const TERMINAL_STATUSES: ReadonlySet<SessionStatus> = new Set(['completed', 'error'])
+
+/** テスト注入用に query() と同シグネチャの関数型を切り出す */
+export type QueryFn = typeof query
+
 function userMessage(text: string): SDKUserMessage {
   // SDK 0.3.226 sdk.d.ts 実測: SDKUserMessage = { type:'user', message: MessageParam, parent_tool_use_id, ... }
   return {
@@ -42,12 +47,16 @@ function userMessage(text: string): SDKUserMessage {
 export class SessionManager extends EventEmitter {
   private sessions = new Map<string, ManagedSession>()
 
+  constructor(private readonly queryFn: QueryFn = query) {
+    super()
+  }
+
   createSession(input: CreateSessionInput): string {
     const id = randomUUID()
     const cwd = input.cwd ?? process.cwd()
     const queue = new AsyncMessageQueue<SDKUserMessage>()
 
-    const handle = query({
+    const handle = this.queryFn({
       prompt: queue,
       options: {
         cwd,
@@ -74,13 +83,13 @@ export class SessionManager extends EventEmitter {
       status: 'starting'
     })
     // 最初のユーザーメッセージもイベントとして正規化ストリームに流す（表示・永続化の正はメイン側）
+    queue.push(userMessage(input.firstMessage))
     this.emitEvent({
       kind: 'user-text',
       sessionId: id,
       timestamp: Date.now(),
       text: input.firstMessage
     })
-    queue.push(userMessage(input.firstMessage))
 
     void this.pump(session)
     return id
@@ -88,43 +97,51 @@ export class SessionManager extends EventEmitter {
 
   sendMessage(sessionId: string, text: string): void {
     const session = this.mustGet(sessionId)
+    if (TERMINAL_STATUSES.has(session.status) || session.queue.isClosed) {
+      // 終了済みセッションへの送信は黙殺せず IPC エラーとして返す（レビュー指摘 #1）
+      throw new Error(`Session ${sessionId} is not accepting input (status: ${session.status})`)
+    }
+    // push が成功してから user-text を記録する（幻のメッセージを残さない）
+    session.queue.push(userMessage(text))
     this.emitEvent({
       kind: 'user-text',
       sessionId,
       timestamp: Date.now(),
       text
     })
-    session.queue.push(userMessage(text))
     this.setStatus(session, 'running')
   }
 
   async interrupt(sessionId: string): Promise<void> {
     const session = this.mustGet(sessionId)
     await session.handle.interrupt()
-    this.setStatus(session, 'interrupted')
+    // status はここでは変えない。中断されたターンの turn-result（error_during_execution）が
+    // awaiting-input へ遷移させる（レビュー指摘: 'interrupted' の不安定さ）
   }
 
-  /** セッションの入力を閉じてクエリを終了させる */
-  async close(sessionId: string): Promise<void> {
+  /** セッションの入力を閉じてクエリを終了させる（pump が完走して terminal 状態になる） */
+  close(sessionId: string): void {
     const session = this.mustGet(sessionId)
     session.queue.close()
   }
 
+  /** アプリ終了時に全セッションの入力を閉じ、CLI サブプロセスを解放する */
+  closeAll(): void {
+    for (const session of this.sessions.values()) {
+      session.queue.close()
+    }
+  }
+
   list(): SessionSummary[] {
-    return [...this.sessions.values()].map((s) => ({
-      sessionId: s.id,
-      claudeSessionId: s.claudeSessionId,
-      status: s.status,
-      cwd: s.cwd,
-      model: s.model,
-      createdAt: s.createdAt,
-      totalCostUsd: s.totalCostUsd
-    }))
+    return [...this.sessions.values()].map((s) => this.toSummary(s))
   }
 
   get(sessionId: string): SessionSummary | undefined {
     const s = this.sessions.get(sessionId)
-    if (!s) return undefined
+    return s ? this.toSummary(s) : undefined
+  }
+
+  private toSummary(s: ManagedSession): SessionSummary {
     return {
       sessionId: s.id,
       claudeSessionId: s.claudeSessionId,
@@ -145,7 +162,7 @@ export class SessionManager extends EventEmitter {
           this.emitEvent(event)
         }
       }
-      if (session.status !== 'error') {
+      if (!TERMINAL_STATUSES.has(session.status)) {
         this.setStatus(session, 'completed')
       }
     } catch (error) {
@@ -157,6 +174,9 @@ export class SessionManager extends EventEmitter {
         message
       })
       this.setStatus(session, 'error')
+    } finally {
+      // クエリ終了後は必ず入力を閉じる。以後の sendMessage は上のガードで拒否される
+      session.queue.close()
     }
   }
 
@@ -169,8 +189,8 @@ export class SessionManager extends EventEmitter {
       }
     } else if (event.kind === 'turn-result') {
       if (event.totalCostUsd !== undefined) {
-        // 実測仕様: 累積値なので合算せず最新値で上書きする
-        session.totalCostUsd = event.totalCostUsd
+        // 累積値だが、クラッシュ系 result はゼロを載せることがある（sdk.d.ts）→ 単調増加ガード
+        session.totalCostUsd = Math.max(session.totalCostUsd ?? 0, event.totalCostUsd)
       }
       this.setStatus(session, 'awaiting-input')
     }

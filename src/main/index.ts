@@ -43,3 +43,8 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
+
+app.on('before-quit', () => {
+  // 全セッションの入力を閉じ、CLI サブプロセスを解放する（レビュー指摘 #6）
+  sessionManager.closeAll()
+})
