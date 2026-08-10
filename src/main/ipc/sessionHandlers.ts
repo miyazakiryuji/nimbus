@@ -23,9 +23,9 @@ const sessionEventsResponseSchema = z.array(nimbusEventSchema)
  * イベントは全ウィンドウへブロードキャストする（多重ウィンドウ前提）。
  */
 export function registerSessionIpc(manager: SessionManager, store: Store): void {
-  ipcMain.handle(IPC_CHANNELS.sessionCreate, (_event, raw: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.sessionCreate, async (_event, raw: unknown) => {
     const req = sessionCreateRequestSchema.parse(raw)
-    const sessionId = manager.createSession(req)
+    const sessionId = await manager.createSession(req)
     if (req.cwd) store.touchWorkspace(req.cwd)
     return { sessionId }
   })
@@ -59,7 +59,7 @@ export function registerSessionIpc(manager: SessionManager, store: Store): void 
     return sessionEventsResponseSchema.parse(store.getEvents(req.sessionId))
   })
 
-  ipcMain.handle(IPC_CHANNELS.sessionResume, (_event, raw: unknown) => {
+  ipcMain.handle(IPC_CHANNELS.sessionResume, async (_event, raw: unknown) => {
     const req = sessionResumeRequestSchema.parse(raw)
     if (manager.isActive(req.sessionId)) {
       return { sessionId: req.sessionId }
@@ -68,7 +68,7 @@ export function registerSessionIpc(manager: SessionManager, store: Store): void 
     if (!persisted) {
       throw new Error(`Unknown session: ${req.sessionId}`)
     }
-    const sessionId = manager.createSession({
+    const sessionId = await manager.createSession({
       reuseSessionId: persisted.sessionId,
       cwd: persisted.cwd,
       resumeClaudeSessionId: persisted.claudeSessionId

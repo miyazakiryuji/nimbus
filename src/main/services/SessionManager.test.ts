@@ -58,7 +58,7 @@ describe('SessionManager（レビュー修正の回帰テスト）', () => {
   it('クエリ失敗後の sendMessage は例外を投げ、user-text を記録しない', async () => {
     const manager = new SessionManager(fakeQuery([], { failWith: new Error('spawn failed') }))
     const events = collectEvents(manager)
-    const id = manager.createSession({ firstMessage: 'hi', cwd: '/tmp' })
+    const id = await manager.createSession({ firstMessage: 'hi', cwd: '/tmp' })
     await waitForStatus(manager, id, 'error')
 
     const userTextsBefore = events.filter((e) => e.kind === 'user-text').length
@@ -71,7 +71,7 @@ describe('SessionManager（レビュー修正の回帰テスト）', () => {
   it('クエリ正常終了後は completed になり、キューが閉じられ送信不可', async () => {
     const manager = new SessionManager(fakeQuery([resultMessage(0.1)]))
     collectEvents(manager)
-    const id = manager.createSession({ firstMessage: 'hi', cwd: '/tmp' })
+    const id = await manager.createSession({ firstMessage: 'hi', cwd: '/tmp' })
     await waitForStatus(manager, id, 'completed')
     expect(() => manager.sendMessage(id, 'again')).toThrow('not accepting input')
   })
@@ -81,7 +81,7 @@ describe('SessionManager（レビュー修正の回帰テスト）', () => {
       fakeQuery([resultMessage(0.5), resultMessage(0, 'error_during_execution')])
     )
     collectEvents(manager)
-    const id = manager.createSession({ firstMessage: 'hi', cwd: '/tmp' })
+    const id = await manager.createSession({ firstMessage: 'hi', cwd: '/tmp' })
     await waitForStatus(manager, id, 'completed')
     expect(manager.get(id)?.totalCostUsd).toBe(0.5)
   })
@@ -91,7 +91,7 @@ describe('SessionManager（レビュー修正の回帰テスト）', () => {
       fakeQuery([resultMessage(0.5), resultMessage(0.8, 'error_during_execution')])
     )
     collectEvents(manager)
-    const id = manager.createSession({ firstMessage: 'hi', cwd: '/tmp' })
+    const id = await manager.createSession({ firstMessage: 'hi', cwd: '/tmp' })
     await waitForStatus(manager, id, 'completed')
     expect(manager.get(id)?.totalCostUsd).toBe(0.8)
   })
@@ -99,8 +99,8 @@ describe('SessionManager（レビュー修正の回帰テスト）', () => {
   it('多重セッション: 2 セッションのイベントが混線しない（§3 原則 5）', async () => {
     const manager = new SessionManager(fakeQuery([resultMessage(0.1)]))
     const events = collectEvents(manager)
-    const id1 = manager.createSession({ firstMessage: 'one', cwd: '/tmp' })
-    const id2 = manager.createSession({ firstMessage: 'two', cwd: '/tmp' })
+    const id1 = await manager.createSession({ firstMessage: 'one', cwd: '/tmp' })
+    const id2 = await manager.createSession({ firstMessage: 'two', cwd: '/tmp' })
     await waitForStatus(manager, id1, 'completed')
     await waitForStatus(manager, id2, 'completed')
 
@@ -119,7 +119,7 @@ describe('SessionManager（レビュー修正の回帰テスト）', () => {
   it('interrupt は status を直接変更しない（turn-result が遷移を駆動する）', async () => {
     const manager = new SessionManager(fakeQuery([resultMessage(0.1)]))
     const events = collectEvents(manager)
-    const id = manager.createSession({ firstMessage: 'hi', cwd: '/tmp' })
+    const id = await manager.createSession({ firstMessage: 'hi', cwd: '/tmp' })
     await waitForStatus(manager, id, 'completed')
     await manager.interrupt(id)
     expect(events.some((e) => e.kind === 'status' && e.status === 'interrupted')).toBe(false)
@@ -133,7 +133,7 @@ describe('SessionManager（レビュー修正の回帰テスト）', () => {
     }) as unknown as QueryFn
     const manager = new SessionManager(capturingQuery)
     const events = collectEvents(manager)
-    const id = manager.createSession({
+    const id = await manager.createSession({
       reuseSessionId: '33333333-3333-4333-8333-333333333333',
       resumeClaudeSessionId: 'claude-old-1',
       cwd: '/tmp'
@@ -148,8 +148,8 @@ describe('SessionManager（レビュー修正の回帰テスト）', () => {
   it('アクティブなセッション ID の再利用は拒否される', async () => {
     const manager = new SessionManager(fakeQuery([resultMessage(0.1)]))
     collectEvents(manager)
-    const id = manager.createSession({ firstMessage: 'hi', cwd: '/tmp' })
-    expect(() => manager.createSession({ reuseSessionId: id, cwd: '/tmp' })).toThrow(
+    const id = await manager.createSession({ firstMessage: 'hi', cwd: '/tmp' })
+    await expect(manager.createSession({ reuseSessionId: id, cwd: '/tmp' })).rejects.toThrow(
       'already active'
     )
     await waitForStatus(manager, id, 'completed')
@@ -158,7 +158,7 @@ describe('SessionManager（レビュー修正の回帰テスト）', () => {
   it('closeAll で全セッションのキューが閉じる', async () => {
     const manager = new SessionManager(fakeQuery([resultMessage(0.1)]))
     collectEvents(manager)
-    const id = manager.createSession({ firstMessage: 'hi', cwd: '/tmp' })
+    const id = await manager.createSession({ firstMessage: 'hi', cwd: '/tmp' })
     await waitForStatus(manager, id, 'completed')
     manager.closeAll()
     expect(() => manager.sendMessage(id, 'x')).toThrow('not accepting input')

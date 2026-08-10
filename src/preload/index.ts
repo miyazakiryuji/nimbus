@@ -2,6 +2,9 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { IpcRendererEvent } from 'electron'
 import {
   IPC_CHANNELS,
+  type ConnectionProfileIdRequest,
+  type ConnectionSaveProfileRequest,
+  type ConnectionSetActiveRequest,
   type SessionCloseRequest,
   type SessionCreateRequest,
   type SessionCreateResponse,
@@ -38,6 +41,16 @@ const nimbus = {
         ipcRenderer.removeListener(IPC_CHANNELS.sessionEvent, listener)
       }
     }
+  },
+  connection: {
+    getState: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.connectionState),
+    saveProfile: (req: ConnectionSaveProfileRequest): Promise<unknown> =>
+      ipcRenderer.invoke(IPC_CHANNELS.connectionSaveProfile, req),
+    deleteProfile: (req: ConnectionProfileIdRequest): Promise<unknown> =>
+      ipcRenderer.invoke(IPC_CHANNELS.connectionDeleteProfile, req),
+    setActive: (req: ConnectionSetActiveRequest): Promise<unknown> =>
+      ipcRenderer.invoke(IPC_CHANNELS.connectionSetActive, req),
+    test: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.connectionTest)
   }
 } as const
 

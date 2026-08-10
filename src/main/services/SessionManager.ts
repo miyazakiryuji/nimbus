@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import { randomUUID } from 'crypto'
 import { query } from '@anthropic-ai/claude-agent-sdk'
-import type { Query, SDKUserMessage } from '@anthropic-ai/claude-agent-sdk'
+import type { Options, Query, SDKUserMessage } from '@anthropic-ai/claude-agent-sdk'
 import type { NimbusEvent, SessionStatus, SessionSummary } from '@shared/events'
 import { AsyncMessageQueue } from './AsyncMessageQueue'
 import { normalizeSdkMessage } from './normalize'
@@ -50,23 +50,30 @@ function userMessage(text: string): SDKUserMessage {
 export class SessionManager extends EventEmitter {
   private sessions = new Map<string, ManagedSession>()
 
-  constructor(private readonly queryFn: QueryFn = query) {
+  constructor(
+    private readonly queryFn: QueryFn = query,
+    /** F-7: アクティブプロファイル由来の追加オプション（env / バイナリパス等） */
+    private readonly optionsProvider?: () => Promise<Partial<Options>>
+  ) {
     super()
   }
 
-  createSession(input: CreateSessionInput): string {
+  async createSession(input: CreateSessionInput): Promise<string> {
     const id = input.reuseSessionId ?? randomUUID()
     if (this.sessions.has(id)) {
       throw new Error(`Session ${id} is already active`)
     }
     const cwd = input.cwd ?? process.cwd()
     const queue = new AsyncMessageQueue<SDKUserMessage>()
+    const extra = (await this.optionsProvider?.()) ?? {}
 
     const handle = this.queryFn({
       prompt: queue,
       options: {
+        // extra.env が無い場合は未指定＝親プロセス環境を継承
+        // （env は「置換」なので提供側が必ず process.env をスプレッドする。§10 検証 7）
+        ...extra,
         cwd,
-        // env は未指定＝親プロセス環境を継承（指定すると置換になる点に注意。§10 検証 7）
         permissionMode: 'default',
         ...(input.resumeClaudeSessionId ? { resume: input.resumeClaudeSessionId } : {})
       }

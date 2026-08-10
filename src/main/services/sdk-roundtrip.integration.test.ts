@@ -14,7 +14,7 @@ describe.runIf(RUN)('SDK roundtrip (real Claude Code)', () => {
     const events: NimbusEvent[] = []
     manager.on('event', (e: NimbusEvent) => events.push(e))
 
-    const sessionId = manager.createSession({
+    const sessionId = await manager.createSession({
       cwd: process.cwd(),
       firstMessage: 'Reply with exactly: NIMBUS_OK'
     })
@@ -75,11 +75,11 @@ describe.runIf(RUN)('SDK roundtrip (real Claude Code)', () => {
         })
       })
 
-    const idA = manager.createSession({
+    const idA = await manager.createSession({
       cwd: process.cwd(),
       firstMessage: 'Reply with exactly: TOKEN_ALPHA'
     })
-    const idB = manager.createSession({
+    const idB = await manager.createSession({
       cwd: process.cwd(),
       firstMessage: 'Reply with exactly: TOKEN_BRAVO'
     })
@@ -116,7 +116,7 @@ describe.runIf(RUN)('SDK roundtrip (real Claude Code)', () => {
         })
       })
 
-    const id1 = manager.createSession({
+    const id1 = await manager.createSession({
       cwd: process.cwd(),
       firstMessage: 'Remember this token: ZEPHYR42. Reply with exactly: SAVED'
     })
@@ -128,7 +128,7 @@ describe.runIf(RUN)('SDK roundtrip (real Claude Code)', () => {
     expect(claudeSessionId).toBeTruthy()
     manager.close(id1)
 
-    const id2 = manager.createSession({
+    const id2 = await manager.createSession({
       cwd: process.cwd(),
       resumeClaudeSessionId: claudeSessionId,
       firstMessage: 'What token did I ask you to remember? Reply with the token only.'

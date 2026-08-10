@@ -16,7 +16,12 @@ export const IPC_CHANNELS = {
   /** 過去セッションの再開（同じ Nimbus セッション ID で再アタッチ） */
   sessionResume: 'nimbus:session:resume',
   /** main → renderer への正規化イベント push */
-  sessionEvent: 'nimbus:session:event'
+  sessionEvent: 'nimbus:session:event',
+  connectionState: 'nimbus:connection:state',
+  connectionSaveProfile: 'nimbus:connection:save-profile',
+  connectionDeleteProfile: 'nimbus:connection:delete-profile',
+  connectionSetActive: 'nimbus:connection:set-active',
+  connectionTest: 'nimbus:connection:test'
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]
@@ -44,4 +49,15 @@ export interface SessionEventsRequest {
 }
 export interface SessionResumeRequest {
   sessionId: string
+}
+/** プロファイル保存（secret は保存時のみ渡す。取得 API は存在しない） */
+export interface ConnectionSaveProfileRequest {
+  profile: unknown
+  secret?: string
+}
+export interface ConnectionProfileIdRequest {
+  profileId: string
+}
+export interface ConnectionSetActiveRequest {
+  profileId: string | null
 }

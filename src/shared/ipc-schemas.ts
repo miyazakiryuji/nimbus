@@ -26,3 +26,16 @@ export const sessionEventsRequestSchema = z.object({
 export const sessionResumeRequestSchema = z.object({
   sessionId: z.string().uuid()
 })
+
+export const connectionSaveProfileRequestSchema = z.object({
+  profile: z.unknown(),
+  secret: z.string().min(1).optional()
+})
+
+export const connectionProfileIdRequestSchema = z.object({
+  profileId: z.string().uuid()
+})
+
+export const connectionSetActiveRequestSchema = z.object({
+  profileId: z.string().uuid().nullable()
+})

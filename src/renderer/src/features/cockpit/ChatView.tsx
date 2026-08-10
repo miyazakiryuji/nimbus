@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { nimbusEventSchema, sessionSummarySchema } from '@shared/events'
 import type { NimbusEvent } from '@shared/events'
 import { TERMINAL_STATUSES, useSessionStore } from '../../stores/sessionStore'
+import { useUiStore } from '../../stores/uiStore'
 
 const sessionListSchema = z.array(sessionSummarySchema)
 
@@ -66,6 +67,10 @@ function ChatView(): React.JSX.Element {
         console.log(
           `[nimbus:renderer] event kind=${parsed.data.kind} session=${parsed.data.sessionId.slice(0, 8)}`
         )
+      }
+      if (parsed.data.kind === 'session-init') {
+        // 課金モード表示（F-7-3）用に直近の認証ソースを記録
+        useUiStore.getState().setLastApiKeySource(parsed.data.apiKeySource)
       }
       ingest(parsed.data)
     })

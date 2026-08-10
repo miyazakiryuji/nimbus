@@ -30,12 +30,150 @@ body {
 }
 
 #root,
-.cockpit {
+.app {
   height: 100vh;
 }
 
-.cockpit {
+.app {
   display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.cockpit {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 1rem;
+  border-top: 1px solid var(--nimbus-color-border);
+  background: var(--nimbus-color-background-soft);
+  font-size: 0.75rem;
+  color: var(--nimbus-color-foreground-muted);
+}
+
+.status-bar-billing {
+  color: var(--nimbus-color-accent);
+}
+
+.status-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.settings {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 2rem;
+  max-width: 46rem;
+}
+
+.settings-title {
+  color: var(--nimbus-color-accent);
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.settings-section {
+  margin-bottom: 1.5rem;
+}
+
+.settings-section h3 {
+  font-size: 0.95rem;
+  margin-bottom: 0.6rem;
+  color: var(--nimbus-color-foreground);
+}
+
+.settings-warning {
+  color: var(--nimbus-color-error);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.settings-muted {
+  color: var(--nimbus-color-foreground-muted);
+  font-size: 0.8rem;
+  margin: 0.4rem 0;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.7rem;
+  font-size: 0.85rem;
+}
+
+.settings-field input,
+.settings-field select,
+.settings-field textarea {
+  background: var(--nimbus-color-background);
+  color: var(--nimbus-color-foreground);
+  border: 1px solid var(--nimbus-color-border);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-family: var(--nimbus-font-family);
+  font-size: 0.85rem;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.profiles-list {
+  list-style: none;
+  margin-bottom: 0.6rem;
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+}
+
+.profile-name {
+  background: transparent;
+  border: none;
+  color: var(--nimbus-color-foreground);
+  cursor: pointer;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.profile-method,
+.profile-secret {
+  color: var(--nimbus-color-foreground-muted);
+  font-size: 0.75rem;
+}
+
+.profile-active {
+  color: var(--nimbus-color-accent);
+  font-size: 0.75rem;
+}
+
+.test-result {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--nimbus-color-foreground);
+}
+
+.test-result-error {
+  color: var(--nimbus-color-error);
 }
 
 .chat {
