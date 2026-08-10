@@ -433,11 +433,44 @@ OSS として公開する以上、以下は実装の前提条件とする。
    → F-7 の課金モード表示の文言に直結するため、**必ず最新情報を確認すること**
 10. Electron `safeStorage` の各 OS での可用性と、利用不可時のフォールバック方針
 
+### §10 検証結果（2026-08-11 実施）
+
+> 7 領域を並列調査し、課金ポリシーと権限 API は別エージェントによる敵対的クロスチェック済み。
+> 出典 URL 付きの生データは `docs/research/sdk-verification-2026-08-11.json`。
+> 以下、**この記述が本ドキュメント内の他の記述と食い違う場合はこちらを正とする。**
+
+1. **パッケージ**：`@anthropic-ai/claude-agent-sdk`（0.3.x 系。Claude Code 本体とバージョン同期、要 Node 18+）。主要 export は `query()` ほか `startup()`, `listSessions()`, `getSessionMessages()`, `getSessionInfo()` 等。**V2 セッション API（`unstable_v2_*`）は 0.3.142 で削除済み。`query()` が唯一の正式 API**（インストール時に `npm view` で最新版を確認すること）
+2. **状態保持セッション**：`query({ prompt: AsyncIterable<SDKUserMessage> })` の**ストリーミング入力モード**を使用。yield する形は `{ role: 'user', content: string }`。TS 版に Python のようなクライアントクラスは存在しない
+3. **ツール実行前介入**：承認インボックスには **`canUseTool`** コールバックを使用。
+   - シグネチャ：`(toolName: string, input: Record<string, unknown>, options: { signal, suggestions?, toolUseID, agentID?, blockedPath?, decisionReason?, requestId? }) => Promise<PermissionResult>`
+   - 戻り値：許可 `{ behavior: 'allow', updatedInput, updatedPermissions? }` ／ 拒否 `{ behavior: 'deny', message }`
+   - **タイムアウトなし＝無期限保留可**（承認インボックスに最適。クエリ自体の abort でのみ解除）
+   - 評価順序：hooks → deny ルール → ask ルール → permissionMode → allow ルール → canUseTool。**早期段階で許可されたツールは canUseTool に届かない**
+   - permissionMode は 6 値：`default` / `dontAsk` / `acceptEdits` / `bypassPermissions` / `plan` / `auto`。実行中に `query.setPermissionMode()` で変更可
+   - 全ツール横断の監査・強制ゲートには PreToolUse フック（戻り値は `{ hookSpecificOutput: { permissionDecision: 'allow'|'deny'|'ask'|'defer', updatedInput?, permissionDecisionReason? } }`）
+4. **イベント型**：init は `{ type:'system', subtype:'init' }` で model / tools / mcp_servers / plugins / skills / slash_commands / agents / cwd / permissionMode / apiKeySource / output_style / session_id / uuid / capabilities を持つ（F-2 の想定どおり）。結果は `{ type:'result' }` で `total_cost_usd`（**クライアント側推定値**）/ `usage`（input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens）/ `modelUsage`（モデル別・サブエージェント含む最も正確な集計）/ num_turns / duration 系 / session_id。トークン単位表示は `includePartialMessages: true` → `type:'stream_event'`（生の Anthropic API イベントをラップ、text は content_block_delta から自前で再構成）。ほかに task_progress / hook_started / compact_boundary / api_retry / plugin_install など
+5. **再開**：session_id は init と result の両方に載る。`options.resume: sessionId` で再開、`+ forkSession: true` で分岐。実体は `~/.claude/projects/<encoded-cwd>/*.jsonl`
+6. **中断**：`query()` の戻り値（Query オブジェクト）に対し `await q.interrupt()`
+7. **バイナリ**：SDK は OS 別ネイティブバイナリを optionalDependencies として**同梱**（追加インストール不要。`--omit=optional` 時は PATH の `claude` にフォールバック）。明示指定は `pathToClaudeCodeExecutable`。**`env` オプションは置換であってマージではない — 必ず `...process.env` をスプレッドすること**
+8. **認証環境変数**：`ANTHROPIC_API_KEY` / `ANTHROPIC_AUTH_TOKEN` / apiKeyHelper（settings）/ `CLAUDE_CODE_OAUTH_TOKEN`（`claude setup-token` で発行・サブスク認証・1年有効）。Bedrock：`CLAUDE_CODE_USE_BEDROCK=1`＋AWS 資格情報チェーン（`CLAUDE_CODE_USE_MANTLE` もあり）。Vertex：`CLAUDE_CODE_USE_VERTEX=1`＋`CLOUD_ML_REGION`＋`ANTHROPIC_VERTEX_PROJECT_ID`。Microsoft Foundry：`CLAUDE_CODE_USE_FOUNDRY=1`＋`ANTHROPIC_FOUNDRY_API_KEY` or `ANTHROPIC_FOUNDRY_AUTH_TOKEN`＋`ANTHROPIC_FOUNDRY_RESOURCE` or `ANTHROPIC_FOUNDRY_BASE_URL`。優先順位：クラウド > AUTH_TOKEN > API_KEY > apiKeyHelper > OAUTH_TOKEN > `/login` の OAuth。モデル指定：`ANTHROPIC_MODEL`、`ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL`
+9. **課金（クロスチェック済・2026-08-11 時点）**：SDK / `claude -p` / サードパーティアプリ経由の利用は**サブスクの利用上限を消費する**（2026-06-15 予定だった別枠クレジット化は公式に一時停止中。再変更があり得るため定期確認）。`total_cost_usd` は認証方式に関わらず入るが推定値であり、正式請求額は Usage & Cost API が正。`apiKeySource` の enum 値は公式ドキュメント未記載 → **実装時に SDK の `index.d.ts` で確認**。
+   **⚠️ ポリシー上の重要事項**：公式ドキュメントに「Unless previously approved, Anthropic does not allow third party developers to offer claude.ai login or rate limits for their products, including agents built on the Claude Agent SDK.」（agent-sdk/overview）の明記あり。Nimbus はログイン UI を実装しない BYO 設計だが、**接続方式①（CLI ログイン利用）を既定として推奨する見せ方は OSS 公開前に要再検討**（課金モード表示の文言にも反映する）
+10. **safeStorage**：同期 API に加え **Electron 42+ の非同期 API（`isAsyncEncryptionAvailable` / `encryptStringAsync` / `decryptStringAsync`）が公式推奨**。`decryptStringAsync` は `{ shouldReEncrypt, result }` を返す（キーローテーション時は再暗号化して保存し直す）。**Linux は keyring 不在時に `basic_text`（実質平文）で「成功」する罠**があるため、`isEncryptionAvailable` に加えて `getSelectedStorageBackend() !== 'basic_text'` をゲートし、不可なら保存を拒否（メモリ保持＋ユーザー警告。平文保存は明示的オプトインのみ）。現行 stable は Electron 43
+
+**ビルドスタックの検証結果（§2 の補強）：**
+
+- scaffold は **electron-vite 5.0.0**（`npm create @quick-start/electron@latest -- --template react-ts`）。create-electron-vite は 2 年更新なしで不採用、Forge の Vite プラグインは公式に experimental 扱い
+- **Vite は ^7 のまま使う**（electron-vite 5 の peerDependencies は ^5||^6||^7。Vite 8 に上げない）
+- electron-vite 5 では `externalizeDepsPlugin` が廃止 → `build.externalizeDeps` オプション＋ネイティブアドオンは `build.rollupOptions.external`
+- **better-sqlite3 13.x は N-API 化**されプリビルトバイナリ同梱 → `@electron/rebuild` は原則不要（Node >= 22 必須）。`dependencies` に置き external 指定
+- Monaco 0.56.0：Vite の `?worker` import で worker を設定（vite-plugin-monaco-editor は 4 年停滞で不採用）。**`loader.config({ monaco })` で CDN 読み込みを必ず無効化**（Electron ではデフォルトの CDN 参照が死ぬ）。シンタックスハイライトは **Shiki（@shikijs/monaco）を採用 → §4 F-8 の選択肢 (b) に決定**
+- zod 4 / zustand 5 / ESLint 10（flat config のみ、eslintrc 完全削除）/ React 19 / electron-builder 26（27 は alpha）
+
 ---
 
 ## 付録：確認事項リスト（実装者向けチェックリスト）
 
-- [ ] §10 の 10 項目を公式ドキュメントで確認し、本ドキュメントを更新した
+- [x] §10 の 10 項目を公式ドキュメントで確認し、本ドキュメントを更新した（2026-08-11、検証結果は §10 末尾）
 - [ ] README に命名の由来を掲載した
 - [ ] README に「Anthropic 非公式」の但し書きを入れた
 - [ ] 資格情報が平文で保存される経路が存在しないことを確認した
