@@ -1,0 +1,44 @@
+/*
+ * 暫定スタイル。Step 5（F-8 テーマ基盤）で全色を --nimbus-* CSS 変数に正式移行する。
+ * ここでも既に色は必ず変数経由とする（ハードコード禁止の先取り）。
+ */
+:root {
+  --nimbus-color-background: #12161f;
+  --nimbus-color-foreground: #d6dae3;
+  --nimbus-color-foreground-muted: #8a92a3;
+  --nimbus-color-accent: #e8c98a;
+  --nimbus-font-family:
+    system-ui, 'Helvetica Neue', 'Hiragino Sans', 'Noto Sans CJK JP', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--nimbus-color-background);
+  color: var(--nimbus-color-foreground);
+  font-family: var(--nimbus-font-family);
+  -webkit-font-smoothing: antialiased;
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 0.5rem;
+}
+
+.shell-title {
+  color: var(--nimbus-color-accent);
+  font-size: 2.5rem;
+  font-weight: 600;
+}
+
+.shell-subtitle {
+  color: var(--nimbus-color-foreground-muted);
+}
