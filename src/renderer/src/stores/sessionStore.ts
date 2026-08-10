@@ -24,7 +24,9 @@ interface SessionStoreState {
   ingest: (event: NimbusEvent) => void
   /** リロード/再オープン時に main の list() から既存セッションを取り込む（重複生成防止） */
   hydrate: (summaries: SessionSummary[]) => void
-  setActive: (sessionId: string) => void
+  /** DB から読んだ過去イベントを先頭にマージする（resume 時の履歴表示） */
+  loadEvents: (sessionId: string, history: NimbusEvent[]) => void
+  setActive: (sessionId: string | null) => void
 }
 
 export const useSessionStore = create<SessionStoreState>((set) => ({
@@ -82,6 +84,25 @@ export const useSessionStore = create<SessionStoreState>((set) => ({
         sessions,
         hydrated: true,
         activeSessionId: state.activeSessionId ?? resumable[0]?.sessionId ?? null
+      }
+    }),
+
+  loadEvents: (sessionId, history) =>
+    set((state) => {
+      const existing = state.sessions[sessionId] ?? {
+        sessionId,
+        status: 'starting' as SessionStatus,
+        events: []
+      }
+      return {
+        sessions: {
+          ...state.sessions,
+          [sessionId]: {
+            ...existing,
+            // 履歴を先頭に、ライブイベントを後ろに（resume 直後の呼び出しを想定）
+            events: [...history, ...existing.events]
+          }
+        }
       }
     }),
 

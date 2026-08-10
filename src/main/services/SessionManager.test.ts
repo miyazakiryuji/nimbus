@@ -125,6 +125,36 @@ describe('SessionManager（レビュー修正の回帰テスト）', () => {
     expect(events.some((e) => e.kind === 'status' && e.status === 'interrupted')).toBe(false)
   })
 
+  it('resume: reuseSessionId で同じ Nimbus ID を引き継ぎ、options.resume に Claude セッション ID が渡る', async () => {
+    let capturedOptions: Record<string, unknown> | undefined
+    const capturingQuery = ((args: { options?: Record<string, unknown> }) => {
+      capturedOptions = args.options
+      return fakeQuery([resultMessage(0.1)])({ prompt: '' } as never)
+    }) as unknown as QueryFn
+    const manager = new SessionManager(capturingQuery)
+    const events = collectEvents(manager)
+    const id = manager.createSession({
+      reuseSessionId: '33333333-3333-4333-8333-333333333333',
+      resumeClaudeSessionId: 'claude-old-1',
+      cwd: '/tmp'
+    })
+    expect(id).toBe('33333333-3333-4333-8333-333333333333')
+    expect(capturedOptions?.resume).toBe('claude-old-1')
+    await waitForStatus(manager, id, 'completed')
+    // firstMessage なし → user-text は流れない
+    expect(events.some((e) => e.kind === 'user-text')).toBe(false)
+  })
+
+  it('アクティブなセッション ID の再利用は拒否される', async () => {
+    const manager = new SessionManager(fakeQuery([resultMessage(0.1)]))
+    collectEvents(manager)
+    const id = manager.createSession({ firstMessage: 'hi', cwd: '/tmp' })
+    expect(() => manager.createSession({ reuseSessionId: id, cwd: '/tmp' })).toThrow(
+      'already active'
+    )
+    await waitForStatus(manager, id, 'completed')
+  })
+
   it('closeAll で全セッションのキューが閉じる', async () => {
     const manager = new SessionManager(fakeQuery([resultMessage(0.1)]))
     collectEvents(manager)

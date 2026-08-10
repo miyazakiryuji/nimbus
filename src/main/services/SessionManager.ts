@@ -21,9 +21,12 @@ interface ManagedSession {
 
 export interface CreateSessionInput {
   cwd?: string
-  firstMessage: string
+  /** 省略時（resume 時）は最初のメッセージを送らず入力待ちで開始する */
+  firstMessage?: string
   /** 再開時に指定する Claude セッション ID（options.resume に渡す） */
   resumeClaudeSessionId?: string
+  /** 再開時に Nimbus セッション ID を引き継ぐ（イベント・DB のキーを安定させる） */
+  reuseSessionId?: string
 }
 
 const TERMINAL_STATUSES: ReadonlySet<SessionStatus> = new Set(['completed', 'error'])
@@ -52,7 +55,10 @@ export class SessionManager extends EventEmitter {
   }
 
   createSession(input: CreateSessionInput): string {
-    const id = randomUUID()
+    const id = input.reuseSessionId ?? randomUUID()
+    if (this.sessions.has(id)) {
+      throw new Error(`Session ${id} is already active`)
+    }
     const cwd = input.cwd ?? process.cwd()
     const queue = new AsyncMessageQueue<SDKUserMessage>()
 
@@ -82,17 +88,24 @@ export class SessionManager extends EventEmitter {
       timestamp: Date.now(),
       status: 'starting'
     })
-    // 最初のユーザーメッセージもイベントとして正規化ストリームに流す（表示・永続化の正はメイン側）
-    queue.push(userMessage(input.firstMessage))
-    this.emitEvent({
-      kind: 'user-text',
-      sessionId: id,
-      timestamp: Date.now(),
-      text: input.firstMessage
-    })
+    if (input.firstMessage !== undefined) {
+      // 最初のユーザーメッセージもイベントとして正規化ストリームに流す（表示・永続化の正はメイン側）
+      queue.push(userMessage(input.firstMessage))
+      this.emitEvent({
+        kind: 'user-text',
+        sessionId: id,
+        timestamp: Date.now(),
+        text: input.firstMessage
+      })
+    }
 
     void this.pump(session)
     return id
+  }
+
+  /** 指定 Nimbus セッションが現在アクティブ（Map に存在）か */
+  isActive(sessionId: string): boolean {
+    return this.sessions.has(sessionId)
   }
 
   sendMessage(sessionId: string, text: string): void {

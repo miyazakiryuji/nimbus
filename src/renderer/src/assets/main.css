@@ -30,13 +30,88 @@ body {
 }
 
 #root,
-.chat {
+.cockpit {
   height: 100vh;
 }
 
+.cockpit {
+  display: flex;
+}
+
 .chat {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+}
+
+.sessions-panel {
+  width: 230px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--nimbus-color-border);
+  background: var(--nimbus-color-background-soft);
+}
+
+.sessions-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--nimbus-color-border);
+  color: var(--nimbus-color-foreground-muted);
+  font-size: 0.8rem;
+}
+
+.btn-small {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+}
+
+.sessions-list {
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.session-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.8rem;
+  background: transparent;
+  color: var(--nimbus-color-foreground);
+  border: none;
+  border-bottom: 1px solid var(--nimbus-color-border);
+  cursor: pointer;
+  font-family: var(--nimbus-font-family);
+}
+
+.session-row:hover {
+  background: var(--nimbus-color-user-bubble);
+}
+
+.session-row-active {
+  background: var(--nimbus-color-user-bubble);
+  box-shadow: inset 2px 0 0 var(--nimbus-color-accent);
+}
+
+.session-row-title {
+  font-size: 0.85rem;
+}
+
+.session-row-meta {
+  font-size: 0.7rem;
+  color: var(--nimbus-color-foreground-muted);
+}
+
+.sessions-empty {
+  padding: 0.8rem;
+  color: var(--nimbus-color-foreground-muted);
+  font-size: 0.8rem;
 }
 
 .chat-header {

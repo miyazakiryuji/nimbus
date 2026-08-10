@@ -97,6 +97,8 @@ function ChatView(): React.JSX.Element {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [active?.events.length])
 
+  const setActive = useSessionStore((s) => s.setActive)
+
   const handleSend = useCallback(async (): Promise<void> => {
     const text = input.trim()
     if (!text || sending || !hydrated) return
@@ -107,7 +109,9 @@ function ChatView(): React.JSX.Element {
       if (active && !activeIsTerminal) {
         await window.nimbus.sessions.send({ sessionId: active.sessionId, text })
       } else {
-        await window.nimbus.sessions.create({ firstMessage: text })
+        const created = await window.nimbus.sessions.create({ firstMessage: text })
+        // 旧セッションを表示中でも、新規作成したセッションへ表示を切り替える
+        setActive(created.sessionId)
       }
     } catch (error) {
       console.error('[nimbus:renderer] send failed', error)
@@ -115,7 +119,7 @@ function ChatView(): React.JSX.Element {
     } finally {
       setSending(false)
     }
-  }, [input, sending, hydrated, active, activeIsTerminal])
+  }, [input, sending, hydrated, active, activeIsTerminal, setActive])
 
   const handleInterrupt = useCallback(async (): Promise<void> => {
     if (!active) return

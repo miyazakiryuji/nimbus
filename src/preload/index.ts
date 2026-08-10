@@ -5,7 +5,9 @@ import {
   type SessionCloseRequest,
   type SessionCreateRequest,
   type SessionCreateResponse,
+  type SessionEventsRequest,
   type SessionInterruptRequest,
+  type SessionResumeRequest,
   type SessionSendRequest
 } from '../shared/ipc-channels'
 
@@ -24,6 +26,11 @@ const nimbus = {
     close: (req: SessionCloseRequest): Promise<{ ok: boolean }> =>
       ipcRenderer.invoke(IPC_CHANNELS.sessionClose, req),
     list: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.sessionList),
+    history: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.sessionHistory),
+    events: (req: SessionEventsRequest): Promise<unknown> =>
+      ipcRenderer.invoke(IPC_CHANNELS.sessionEvents, req),
+    resume: (req: SessionResumeRequest): Promise<SessionCreateResponse> =>
+      ipcRenderer.invoke(IPC_CHANNELS.sessionResume, req),
     onEvent: (callback: (event: unknown) => void): (() => void) => {
       const listener = (_event: IpcRendererEvent, payload: unknown): void => callback(payload)
       ipcRenderer.on(IPC_CHANNELS.sessionEvent, listener)

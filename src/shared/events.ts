@@ -121,3 +121,9 @@ export const sessionSummarySchema = z.object({
   totalCostUsd: z.number().optional()
 })
 export type SessionSummary = z.infer<typeof sessionSummarySchema>
+
+/** DB に永続化されたセッション（過去分を含む） */
+export const persistedSessionSchema = sessionSummarySchema.extend({
+  updatedAt: z.number()
+})
+export type PersistedSession = z.infer<typeof persistedSessionSchema>

@@ -9,6 +9,12 @@ export const IPC_CHANNELS = {
   sessionInterrupt: 'nimbus:session:interrupt',
   sessionClose: 'nimbus:session:close',
   sessionList: 'nimbus:session:list',
+  /** DB に永続化された全セッション（過去分含む） */
+  sessionHistory: 'nimbus:session:history',
+  /** 指定セッションの永続化済みイベント列 */
+  sessionEvents: 'nimbus:session:events',
+  /** 過去セッションの再開（同じ Nimbus セッション ID で再アタッチ） */
+  sessionResume: 'nimbus:session:resume',
   /** main → renderer への正規化イベント push */
   sessionEvent: 'nimbus:session:event'
 } as const
@@ -31,5 +37,11 @@ export interface SessionInterruptRequest {
   sessionId: string
 }
 export interface SessionCloseRequest {
+  sessionId: string
+}
+export interface SessionEventsRequest {
+  sessionId: string
+}
+export interface SessionResumeRequest {
   sessionId: string
 }

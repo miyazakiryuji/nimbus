@@ -18,3 +18,11 @@ export const sessionInterruptRequestSchema = z.object({
 export const sessionCloseRequestSchema = z.object({
   sessionId: z.string().uuid()
 })
+
+export const sessionEventsRequestSchema = z.object({
+  sessionId: z.string().uuid()
+})
+
+export const sessionResumeRequestSchema = z.object({
+  sessionId: z.string().uuid()
+})
