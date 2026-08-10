@@ -7,6 +7,7 @@ import {
   type Profile,
   type ProfilesFile
 } from '@shared/profiles'
+import { DEFAULT_SETTINGS, settingsSchema, type Settings } from '@shared/settings'
 
 /** 機密らしい名前の env キーは profiles.json に保存させない（§5/§6） */
 const FORBIDDEN_ENV_NAME = /(KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL)/i
@@ -18,10 +19,37 @@ const FORBIDDEN_ENV_NAME = /(KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL)/i
 export class ConfigService {
   private readonly dir: string
   private readonly profilesPath: string
+  private readonly settingsPath: string
 
   constructor(baseDir: string = join(homedir(), '.nimbus')) {
     this.dir = baseDir
     this.profilesPath = join(baseDir, 'profiles.json')
+    this.settingsPath = join(baseDir, 'settings.json')
+  }
+
+  get settingsFilePath(): string {
+    return this.settingsPath
+  }
+
+  get userThemesDir(): string {
+    return join(this.dir, 'themes')
+  }
+
+  loadSettings(): Settings {
+    try {
+      const raw = readFileSync(this.settingsPath, 'utf8')
+      const parsed = settingsSchema.safeParse(JSON.parse(raw))
+      if (parsed.success) return parsed.data
+      console.warn('[nimbus:config] invalid settings.json — falling back to defaults (§5)')
+      return structuredClone(DEFAULT_SETTINGS)
+    } catch {
+      return structuredClone(DEFAULT_SETTINGS)
+    }
+  }
+
+  saveSettings(settings: Settings): void {
+    mkdirSync(this.dir, { recursive: true })
+    writeFileSync(this.settingsPath, JSON.stringify(settings, null, 2) + '\n')
   }
 
   loadProfiles(): ProfilesFile {

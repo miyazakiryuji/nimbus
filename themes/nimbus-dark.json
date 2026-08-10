@@ -1,0 +1,16 @@
+{
+  "name": "Nimbus Dark",
+  "type": "dark",
+  "author": "Nimbus",
+  "colors": {
+    "editor.background": "#12161f",
+    "editor.foreground": "#d6dae3",
+    "sideBar.background": "#1a202c",
+    "statusBar.background": "#1a202c",
+    "panel.border": "#2a3140",
+    "descriptionForeground": "#8a92a3",
+    "errorForeground": "#e07a7a",
+    "nimbus.accent": "#e8c98a",
+    "nimbus.userBubble": "#24304a"
+  }
+}

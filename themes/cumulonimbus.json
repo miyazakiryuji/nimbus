@@ -1,0 +1,16 @@
+{
+  "name": "Cumulonimbus",
+  "type": "highContrast",
+  "author": "Nimbus",
+  "colors": {
+    "editor.background": "#000000",
+    "editor.foreground": "#ffffff",
+    "sideBar.background": "#0a0a12",
+    "statusBar.background": "#0a0a12",
+    "panel.border": "#ffffff",
+    "descriptionForeground": "#c8c8d0",
+    "errorForeground": "#ff6060",
+    "nimbus.accent": "#ffd700",
+    "nimbus.userBubble": "#1a1a40"
+  }
+}

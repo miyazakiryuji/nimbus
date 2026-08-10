@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { ConnectionState } from '@shared/profiles'
+import type { ThemeState } from '@shared/theme'
 
 interface UiStoreState {
   view: 'cockpit' | 'settings'
@@ -9,6 +10,8 @@ interface UiStoreState {
   /** 直近の session-init の apiKeySource（課金モード表示に使用） */
   lastApiKeySource: string | null
   setLastApiKeySource: (source: string) => void
+  themeState: ThemeState | null
+  setThemeState: (state: ThemeState) => void
 }
 
 export const useUiStore = create<UiStoreState>((set) => ({
@@ -17,5 +20,7 @@ export const useUiStore = create<UiStoreState>((set) => ({
   connection: null,
   setConnection: (connection) => set({ connection }),
   lastApiKeySource: null,
-  setLastApiKeySource: (lastApiKeySource) => set({ lastApiKeySource })
+  setLastApiKeySource: (lastApiKeySource) => set({ lastApiKeySource }),
+  themeState: null,
+  setThemeState: (themeState) => set({ themeState })
 }))

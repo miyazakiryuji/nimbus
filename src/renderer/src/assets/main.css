@@ -26,7 +26,18 @@ body {
   background: var(--nimbus-color-background);
   color: var(--nimbus-color-foreground);
   font-family: var(--nimbus-font-family);
+  font-size: var(--nimbus-font-size, 14px);
+  line-height: var(--nimbus-line-height, 1.6);
   -webkit-font-smoothing: antialiased;
+}
+
+.settings-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.settings-row .settings-field {
+  flex: 1;
 }
 
 #root,

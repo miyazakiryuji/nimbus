@@ -21,7 +21,12 @@ export const IPC_CHANNELS = {
   connectionSaveProfile: 'nimbus:connection:save-profile',
   connectionDeleteProfile: 'nimbus:connection:delete-profile',
   connectionSetActive: 'nimbus:connection:set-active',
-  connectionTest: 'nimbus:connection:test'
+  connectionTest: 'nimbus:connection:test',
+  themeState: 'nimbus:theme:state',
+  themeSetSelected: 'nimbus:theme:set-selected',
+  settingsSaveFont: 'nimbus:settings:save-font',
+  /** main → renderer へのテーマ変更 push（ホットリロード・OS ダークモード追従） */
+  themeChanged: 'nimbus:theme:changed'
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]
@@ -60,4 +65,10 @@ export interface ConnectionProfileIdRequest {
 }
 export interface ConnectionSetActiveRequest {
   profileId: string | null
+}
+export interface ThemeSetSelectedRequest {
+  selected: string
+}
+export interface SettingsSaveFontRequest {
+  font: { fontFamily?: string; fontSize?: number; lineHeight?: number }
 }

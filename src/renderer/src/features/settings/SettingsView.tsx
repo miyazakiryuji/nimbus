@@ -41,6 +41,97 @@ function textToEnv(text: string): Record<string, string> {
   return env
 }
 
+function ThemeSection(): React.JSX.Element {
+  const themeState = useUiStore((s) => s.themeState)
+  const [fontFamily, setFontFamily] = useState('')
+  const [fontSize, setFontSize] = useState('')
+  const [lineHeight, setLineHeight] = useState('')
+  const [fontMessage, setFontMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!themeState) return
+    // テーマ状態が届いたら現在値をフォームへ反映（JSON 直接編集との双方向反映）
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFontFamily(themeState.font.fontFamily ?? '')
+    setFontSize(themeState.font.fontSize?.toString() ?? '')
+    setLineHeight(themeState.font.lineHeight?.toString() ?? '')
+  }, [themeState])
+
+  const handleThemeChange = async (selected: string): Promise<void> => {
+    await window.nimbus.theme.setSelected({ selected })
+  }
+
+  const handleFontSave = async (): Promise<void> => {
+    setFontMessage(null)
+    try {
+      const font: { fontFamily?: string; fontSize?: number; lineHeight?: number } = {}
+      if (fontFamily.trim()) font.fontFamily = fontFamily.trim()
+      if (fontSize.trim()) font.fontSize = Number(fontSize)
+      if (lineHeight.trim()) font.lineHeight = Number(lineHeight)
+      await window.nimbus.theme.saveFont({ font })
+      setFontMessage('保存しました（即時反映）')
+    } catch (error) {
+      setFontMessage(`保存に失敗: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+
+  return (
+    <section className="settings-section">
+      <h3>テーマ</h3>
+      <label className="settings-field">
+        <span>テーマ（~/.nimbus/themes/*.json を置くと自動で追加されます）</span>
+        <select
+          value={themeState?.selected ?? 'system'}
+          onChange={(e) => void handleThemeChange(e.target.value)}
+        >
+          <option value="system">OS に追従（ダークモード連動）</option>
+          {(themeState?.themes ?? []).map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+              {t.source === 'user' ? '（ユーザー）' : ''}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="settings-field">
+        <span>フォントファミリ</span>
+        <input
+          value={fontFamily}
+          onChange={(e) => setFontFamily(e.target.value)}
+          placeholder="空欄で既定"
+        />
+      </label>
+      <div className="settings-row">
+        <label className="settings-field">
+          <span>フォントサイズ (px)</span>
+          <input
+            type="number"
+            value={fontSize}
+            onChange={(e) => setFontSize(e.target.value)}
+            placeholder="14"
+          />
+        </label>
+        <label className="settings-field">
+          <span>行間</span>
+          <input
+            type="number"
+            step="0.1"
+            value={lineHeight}
+            onChange={(e) => setLineHeight(e.target.value)}
+            placeholder="1.6"
+          />
+        </label>
+      </div>
+      <div className="settings-actions">
+        <button className="btn btn-primary" onClick={() => void handleFontSave()}>
+          フォント設定を保存
+        </button>
+      </div>
+      {fontMessage && <p className="settings-muted">{fontMessage}</p>}
+    </section>
+  )
+}
+
 function SettingsView(): React.JSX.Element {
   const { connection, setConnection } = useUiStore()
   const [editing, setEditing] = useState<Profile>(emptyProfile())
@@ -123,7 +214,8 @@ function SettingsView(): React.JSX.Element {
 
   return (
     <div className="settings">
-      <h2 className="settings-title">接続設定</h2>
+      <h2 className="settings-title">設定</h2>
+      <ThemeSection />
 
       {connection && !connection.canPersistSecrets && (
         <p className="settings-warning">

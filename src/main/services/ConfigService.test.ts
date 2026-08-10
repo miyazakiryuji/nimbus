@@ -79,4 +79,12 @@ describe('ConfigService', () => {
       'Unknown profile'
     )
   })
+
+  it('settings.json: 不在・破損時は既定値、保存 → 読込の roundtrip（§5）', () => {
+    expect(config.loadSettings()).toEqual({ theme: 'system', font: {} })
+    config.saveSettings({ theme: 'nimbus-dark', font: { fontSize: 16 } })
+    expect(config.loadSettings()).toEqual({ theme: 'nimbus-dark', font: { fontSize: 16 } })
+    writeFileSync(join(dir, 'settings.json'), '{ broken')
+    expect(config.loadSettings()).toEqual({ theme: 'system', font: {} })
+  })
 })

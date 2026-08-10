@@ -1,0 +1,16 @@
+{
+  "name": "Nimbus Light",
+  "type": "light",
+  "author": "Nimbus",
+  "colors": {
+    "editor.background": "#f7f8fa",
+    "editor.foreground": "#2a3140",
+    "sideBar.background": "#eef0f4",
+    "statusBar.background": "#eef0f4",
+    "panel.border": "#d5dae3",
+    "descriptionForeground": "#6a7284",
+    "errorForeground": "#b3423a",
+    "nimbus.accent": "#a9832f",
+    "nimbus.userBubble": "#dde6f5"
+  }
+}

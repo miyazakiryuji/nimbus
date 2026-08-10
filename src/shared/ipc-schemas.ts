@@ -39,3 +39,15 @@ export const connectionProfileIdRequestSchema = z.object({
 export const connectionSetActiveRequestSchema = z.object({
   profileId: z.string().uuid().nullable()
 })
+
+export const themeSetSelectedRequestSchema = z.object({
+  selected: z.string().min(1)
+})
+
+export const settingsSaveFontRequestSchema = z.object({
+  font: z.object({
+    fontFamily: z.string().optional(),
+    fontSize: z.number().min(8).max(32).optional(),
+    lineHeight: z.number().min(1).max(3).optional()
+  })
+})

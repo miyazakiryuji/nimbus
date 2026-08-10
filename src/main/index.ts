@@ -1,15 +1,21 @@
 import { join } from 'path'
 import { app, BrowserWindow, safeStorage } from 'electron'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
+import { themeSchema } from '@shared/theme'
 import { createMainWindow } from './window'
 import { SessionManager } from './services/SessionManager'
 import { createSanitizer } from './services/sanitizer'
 import { ConfigService } from './services/ConfigService'
 import { CredentialVault } from './services/CredentialVault'
 import { ConnectionService } from './services/ConnectionService'
+import { ThemeService } from './services/ThemeService'
 import { Store } from './db/Store'
 import { registerSessionIpc } from './ipc/sessionHandlers'
 import { registerConnectionIpc } from './ipc/connectionHandlers'
+import { registerThemeIpc } from './ipc/themeHandlers'
+import nimbusDark from '../../themes/nimbus-dark.json'
+import nimbusLight from '../../themes/nimbus-light.json'
+import cumulonimbus from '../../themes/cumulonimbus.json'
 
 const sanitizer = createSanitizer(process.env)
 const config = new ConfigService()
@@ -50,6 +56,15 @@ app.whenReady().then(() => {
 
   registerSessionIpc(sessionManager, store)
   registerConnectionIpc(config, vault, connection)
+  const themeService = new ThemeService(
+    {
+      'nimbus-dark': themeSchema.parse(nimbusDark),
+      'nimbus-light': themeSchema.parse(nimbusLight),
+      cumulonimbus: themeSchema.parse(cumulonimbus)
+    },
+    config.userThemesDir
+  )
+  registerThemeIpc(config, themeService)
   createMainWindow()
 
   // E2E 起動確認用スモーク: NIMBUS_SMOKE=1 で 1 往復を自動実行する（docs/testing 参照）

@@ -11,7 +11,9 @@ import {
   type SessionEventsRequest,
   type SessionInterruptRequest,
   type SessionResumeRequest,
-  type SessionSendRequest
+  type SessionSendRequest,
+  type SettingsSaveFontRequest,
+  type ThemeSetSelectedRequest
 } from '../shared/ipc-channels'
 
 // §3 設計原則 1: raw な ipcRenderer は公開せず、型付きのホワイトリスト API のみを公開する。
@@ -51,6 +53,20 @@ const nimbus = {
     setActive: (req: ConnectionSetActiveRequest): Promise<unknown> =>
       ipcRenderer.invoke(IPC_CHANNELS.connectionSetActive, req),
     test: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.connectionTest)
+  },
+  theme: {
+    getState: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.themeState),
+    setSelected: (req: ThemeSetSelectedRequest): Promise<unknown> =>
+      ipcRenderer.invoke(IPC_CHANNELS.themeSetSelected, req),
+    saveFont: (req: SettingsSaveFontRequest): Promise<unknown> =>
+      ipcRenderer.invoke(IPC_CHANNELS.settingsSaveFont, req),
+    onChanged: (callback: (state: unknown) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, payload: unknown): void => callback(payload)
+      ipcRenderer.on(IPC_CHANNELS.themeChanged, listener)
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.themeChanged, listener)
+      }
+    }
   }
 } as const
 
