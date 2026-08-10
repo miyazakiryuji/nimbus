@@ -1,9 +1,34 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
+import type { IpcRendererEvent } from 'electron'
+import {
+  IPC_CHANNELS,
+  type SessionCreateRequest,
+  type SessionCreateResponse,
+  type SessionInterruptRequest,
+  type SessionSendRequest
+} from '../shared/ipc-channels'
 
-// Renderer へ公開する Nimbus API（§3: raw な ipcRenderer は公開しない。
-// 型付きのホワイトリスト API のみをここに追加していく。Step 2 で拡張）
+// §3 設計原則 1: raw な ipcRenderer は公開せず、型付きのホワイトリスト API のみを公開する。
+// 注意: sandbox 化 preload では外部モジュール（zod 等）を require できないため、
+// ここでは ipc-channels（依存なし）だけを import する。スキーマ検証はメイン側で行う。
 const nimbus = {
-  platform: process.platform
+  platform: process.platform,
+  sessions: {
+    create: (req: SessionCreateRequest): Promise<SessionCreateResponse> =>
+      ipcRenderer.invoke(IPC_CHANNELS.sessionCreate, req),
+    send: (req: SessionSendRequest): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.sessionSend, req),
+    interrupt: (req: SessionInterruptRequest): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.sessionInterrupt, req),
+    list: (): Promise<unknown[]> => ipcRenderer.invoke(IPC_CHANNELS.sessionList),
+    onEvent: (callback: (event: unknown) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, payload: unknown): void => callback(payload)
+      ipcRenderer.on(IPC_CHANNELS.sessionEvent, listener)
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.sessionEvent, listener)
+      }
+    }
+  }
 } as const
 
 export type NimbusApi = typeof nimbus
