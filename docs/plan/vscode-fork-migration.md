@@ -149,3 +149,19 @@ npm run gulp vscode-darwin-arm64   # パッケージ（出力は 1 階層上の 
 
 - **Code - OSS は現在 Copilot を同梱している**（`extensions/copilot/`＋`product.json` の `defaultChatAgent`、`compile-copilot` スクリプト）。Nimbus は Claude の操縦席なので、**F1 で Copilot を除去する**（VSCodium も専用パッチで除去している）
 - ビルド基盤は変化が速い（gulpfile が TS 化、拡張バンドルが webpack → esbuild、`tsgo` 型チェック）。**タグ固定は必須**
+
+## 6. F1 実施結果（2026-08-12）
+
+**達成**: フォークが「Nimbus」として開発ビルド・パッケージ版の両方で起動する。
+
+- 開発: `npm install`(2分) → `npm run compile`(39秒・エラー0) → `./scripts/code.sh`
+- パッケージ: `npm run gulp vscode-darwin-arm64` → `../VSCode-darwin-arm64/Nimbus.app`（`dev.idris.nimbus` / URL スキーム `nimbus` / 独自アイコン）
+- Welcome は「Nimbus / A cockpit for your agents」「Get started with Nimbus」
+- 初回起動の Copilot サインインモーダルを抑止（詳細は `nimbus/docs/core-changes.md`）
+- 検証記録: `nimbus/docs/testing/f1-fork-build.md`
+
+**残課題**
+
+1. **push が `workflow` スコープ不足で拒否される**（フォークが .github/workflows を 18 個含むため）。`gh auth refresh -s workflow` が必要
+2. Copilot が同梱物として残っている（app 1.4GB の一因）
+3. localize 文字列に残る "VS Code" 直書き（約 150 箇所）の掃除
