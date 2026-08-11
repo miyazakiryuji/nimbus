@@ -12,9 +12,11 @@ import { PermissionBroker } from './services/PermissionBroker'
 import { resolveBundledClaudeBinary } from './services/bundledBinary'
 import { ThemeService } from './services/ThemeService'
 import { Store } from './db/Store'
+import { GitService } from './services/GitService'
 import { registerSessionIpc } from './ipc/sessionHandlers'
 import { registerConnectionIpc } from './ipc/connectionHandlers'
 import { registerApprovalIpc } from './ipc/approvalHandlers'
+import { registerReviewIpc } from './ipc/reviewHandlers'
 import { registerThemeIpc } from './ipc/themeHandlers'
 import nimbusDark from '../../themes/nimbus-dark.json'
 import nimbusLight from '../../themes/nimbus-light.json'
@@ -74,6 +76,7 @@ app.whenReady().then(() => {
 
   registerSessionIpc(sessionManager, store)
   registerConnectionIpc(config, vault, connection)
+  registerReviewIpc(new GitService(), store)
   const themeService = new ThemeService(
     {
       'nimbus-dark': themeSchema.parse(nimbusDark),

@@ -53,6 +53,25 @@ export const approvalsDenyRequestSchema = z.object({
   ids: z.array(z.string().uuid()).min(1)
 })
 
+export const gitCwdRequestSchema = z.object({
+  cwd: z.string().min(1)
+})
+
+export const gitFileRequestSchema = z.object({
+  cwd: z.string().min(1),
+  path: z.string().min(1)
+})
+
+export const gitCheckpointRequestSchema = z.object({
+  cwd: z.string().min(1),
+  label: z.string().min(1).max(100)
+})
+
+export const gitRestoreRequestSchema = z.object({
+  cwd: z.string().min(1),
+  hash: z.string().regex(/^[0-9a-f]{7,40}$/i)
+})
+
 export const claudeMdEntrySchema = z.object({
   path: z.string(),
   scope: z.enum(['user', 'project', 'parent'])

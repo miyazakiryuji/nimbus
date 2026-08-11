@@ -5,6 +5,10 @@ import {
   type ApprovalsApproveRequest,
   type ApprovalsDenyRequest,
   type ConnectionProfileIdRequest,
+  type GitCheckpointRequest,
+  type GitCwdRequest,
+  type GitFileRequest,
+  type GitRestoreRequest,
   type ConnectionSaveProfileRequest,
   type ConnectionSetActiveRequest,
   type SessionCloseRequest,
@@ -73,6 +77,23 @@ const nimbus = {
         ipcRenderer.removeListener(IPC_CHANNELS.approvalsChanged, listener)
       }
     }
+  },
+  workspace: {
+    open: (): Promise<{ path: string | null }> => ipcRenderer.invoke(IPC_CHANNELS.workspaceOpen)
+  },
+  git: {
+    status: (req: GitCwdRequest): Promise<unknown> =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitStatus, req),
+    diffFile: (req: GitFileRequest): Promise<unknown> =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitDiffFile, req),
+    checkpoint: (req: GitCheckpointRequest): Promise<unknown> =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitCheckpoint, req),
+    history: (req: GitCwdRequest): Promise<unknown> =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitHistory, req),
+    revertFile: (req: GitFileRequest): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitRevertFile, req),
+    restore: (req: GitRestoreRequest): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitRestore, req)
   },
   theme: {
     getState: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.themeState),

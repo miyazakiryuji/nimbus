@@ -195,6 +195,161 @@ body {
   gap: 1rem;
 }
 
+.review {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.review-empty {
+  align-items: center;
+  justify-content: center;
+  color: var(--nimbus-color-foreground-muted);
+  padding: 2rem;
+}
+
+.review-side {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--nimbus-color-border);
+  background: var(--nimbus-color-background-soft);
+  overflow-y: auto;
+}
+
+.review-side-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.8rem;
+  color: var(--nimbus-color-foreground-muted);
+  border-bottom: 1px solid var(--nimbus-color-border);
+}
+
+.review-files {
+  list-style: none;
+  overflow-y: auto;
+  max-height: 40vh;
+}
+
+.review-file {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.35rem 0.8rem;
+  background: transparent;
+  border: none;
+  color: var(--nimbus-color-foreground);
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--nimbus-font-family-mono);
+}
+
+.review-file:hover {
+  background: var(--nimbus-color-user-bubble);
+}
+
+.review-file-active {
+  background: var(--nimbus-color-user-bubble);
+  box-shadow: inset 2px 0 0 var(--nimbus-color-accent);
+}
+
+.review-file-status {
+  color: var(--nimbus-color-accent);
+  flex-shrink: 0;
+}
+
+.review-file-path {
+  word-break: break-all;
+}
+
+.review-cp-create {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.5rem 0.8rem;
+}
+
+.review-cp-create input {
+  flex: 1;
+  min-width: 0;
+  background: var(--nimbus-color-background);
+  color: var(--nimbus-color-foreground);
+  border: 1px solid var(--nimbus-color-border);
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.78rem;
+}
+
+.review-history {
+  list-style: none;
+}
+
+.review-cp {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.75rem;
+}
+
+.review-cp-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.review-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--nimbus-color-border);
+  font-family: var(--nimbus-font-family-mono);
+  font-size: 0.8rem;
+}
+
+.review-editor {
+  flex: 1;
+  min-height: 0;
+}
+
+.review-comment {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--nimbus-color-border);
+  background: var(--nimbus-color-background-soft);
+}
+
+.review-comment textarea {
+  flex: 1;
+  resize: none;
+  background: var(--nimbus-color-background);
+  color: var(--nimbus-color-foreground);
+  border: 1px solid var(--nimbus-color-border);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font-family: var(--nimbus-font-family);
+  font-size: 0.85rem;
+}
+
+.review-message {
+  padding: 0.2rem 1rem;
+}
+
 .settings-row .settings-field {
   flex: 1;
 }

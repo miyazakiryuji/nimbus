@@ -114,7 +114,12 @@ function ChatView(): React.JSX.Element {
       if (active && !activeIsTerminal) {
         await window.nimbus.sessions.send({ sessionId: active.sessionId, text })
       } else {
-        const created = await window.nimbus.sessions.create({ firstMessage: text })
+        // 新規セッションは開いているワークスペースを cwd にする（IDE 化）
+        const workspace = useUiStore.getState().workspace
+        const created = await window.nimbus.sessions.create({
+          firstMessage: text,
+          ...(workspace ? { cwd: workspace } : {})
+        })
         // 旧セッションを表示中でも、新規作成したセッションへ表示を切り替える
         setActive(created.sessionId)
       }

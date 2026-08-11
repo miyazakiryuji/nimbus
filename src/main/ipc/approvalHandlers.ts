@@ -1,9 +1,10 @@
-import { BrowserWindow, ipcMain, Notification } from 'electron'
+import { ipcMain, Notification } from 'electron'
 import { z } from 'zod'
 import { IPC_CHANNELS } from '@shared/ipc-channels'
 import { approvalSummarySchema, type ApprovalSummary } from '@shared/approvals'
 import { approvalsApproveRequestSchema, approvalsDenyRequestSchema } from '@shared/ipc-schemas'
 import type { PermissionBroker } from '../services/PermissionBroker'
+import { broadcastToWindows } from './broadcast'
 
 const approvalsListSchema = z.array(approvalSummarySchema)
 
@@ -23,9 +24,7 @@ export function registerApprovalIpc(broker: PermissionBroker): void {
 
   broker.on('changed', (list: ApprovalSummary[]) => {
     const parsed = approvalsListSchema.parse(list)
-    for (const window of BrowserWindow.getAllWindows()) {
-      window.webContents.send(IPC_CHANNELS.approvalsChanged, parsed)
-    }
+    broadcastToWindows(IPC_CHANNELS.approvalsChanged, parsed)
   })
 
   broker.on('added', (summary: ApprovalSummary) => {

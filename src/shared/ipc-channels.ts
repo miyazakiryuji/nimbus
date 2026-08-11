@@ -28,6 +28,13 @@ export const IPC_CHANNELS = {
   approvalsDeny: 'nimbus:approvals:deny',
   /** main → renderer への承認キュー変更 push */
   approvalsChanged: 'nimbus:approvals:changed',
+  workspaceOpen: 'nimbus:workspace:open',
+  gitStatus: 'nimbus:git:status',
+  gitDiffFile: 'nimbus:git:diff-file',
+  gitCheckpoint: 'nimbus:git:checkpoint',
+  gitHistory: 'nimbus:git:history',
+  gitRevertFile: 'nimbus:git:revert-file',
+  gitRestore: 'nimbus:git:restore',
   themeState: 'nimbus:theme:state',
   themeSetSelected: 'nimbus:theme:set-selected',
   settingsSaveFont: 'nimbus:settings:save-font',
@@ -81,6 +88,21 @@ export interface ApprovalsApproveRequest {
 }
 export interface ApprovalsDenyRequest {
   ids: string[]
+}
+export interface GitCwdRequest {
+  cwd: string
+}
+export interface GitFileRequest {
+  cwd: string
+  path: string
+}
+export interface GitCheckpointRequest {
+  cwd: string
+  label: string
+}
+export interface GitRestoreRequest {
+  cwd: string
+  hash: string
 }
 export interface SettingsSaveFontRequest {
   font: { fontFamily?: string; fontSize?: number; lineHeight?: number }

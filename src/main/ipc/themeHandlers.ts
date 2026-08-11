@@ -1,11 +1,12 @@
 import { existsSync, watch, type FSWatcher } from 'fs'
 import { dirname } from 'path'
-import { BrowserWindow, ipcMain, nativeTheme } from 'electron'
+import { ipcMain, nativeTheme } from 'electron'
 import { IPC_CHANNELS } from '@shared/ipc-channels'
 import { buildCssVars, themeStateSchema, type ThemeState } from '@shared/theme'
 import { settingsSaveFontRequestSchema, themeSetSelectedRequestSchema } from '@shared/ipc-schemas'
 import type { ConfigService } from '../services/ConfigService'
 import type { ThemeService } from '../services/ThemeService'
+import { broadcastToWindows } from './broadcast'
 
 /**
  * テーマ関連 IPC（F-8）。
@@ -33,10 +34,7 @@ export function registerThemeIpc(config: ConfigService, themes: ThemeService): v
 
   const broadcast = (): void => {
     try {
-      const state = buildState()
-      for (const window of BrowserWindow.getAllWindows()) {
-        window.webContents.send(IPC_CHANNELS.themeChanged, state)
-      }
+      broadcastToWindows(IPC_CHANNELS.themeChanged, buildState())
     } catch (error) {
       console.error('[nimbus:theme] broadcast failed', error)
     }

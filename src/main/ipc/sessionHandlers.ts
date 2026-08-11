@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from 'electron'
+import { ipcMain } from 'electron'
 import { z } from 'zod'
 import { IPC_CHANNELS } from '@shared/ipc-channels'
 import { nimbusEventSchema, persistedSessionSchema, sessionSummarySchema } from '@shared/events'
@@ -15,6 +15,7 @@ import {
 import type { SessionManager } from '../services/SessionManager'
 import type { Store } from '../db/Store'
 import { findClaudeMdChain } from '../services/claudeMd'
+import { broadcastToWindows } from './broadcast'
 
 const sessionListResponseSchema = z.array(sessionSummarySchema)
 const sessionHistoryResponseSchema = z.array(persistedSessionSchema)
@@ -93,8 +94,6 @@ export function registerSessionIpc(manager: SessionManager, store: Store): void 
   manager.on('event', (event: unknown) => {
     // 送出前にもスキーマ検証（正規化層のバグを IPC 境界で検出する）
     const parsed = nimbusEventSchema.parse(event)
-    for (const window of BrowserWindow.getAllWindows()) {
-      window.webContents.send(IPC_CHANNELS.sessionEvent, parsed)
-    }
+    broadcastToWindows(IPC_CHANNELS.sessionEvent, parsed)
   })
 }
