@@ -9,6 +9,7 @@ import { ConfigService } from './services/ConfigService'
 import { CredentialVault } from './services/CredentialVault'
 import { ConnectionService } from './services/ConnectionService'
 import { PermissionBroker } from './services/PermissionBroker'
+import { resolveBundledClaudeBinary } from './services/bundledBinary'
 import { ThemeService } from './services/ThemeService'
 import { Store } from './db/Store'
 import { registerSessionIpc } from './ipc/sessionHandlers'
@@ -39,7 +40,11 @@ app.whenReady().then(() => {
   })
 
   vault = new CredentialVault(join(app.getPath('userData'), 'credentials.enc.json'), safeStorage)
-  connection = new ConnectionService(config, vault)
+  connection = new ConnectionService(
+    config,
+    vault,
+    app.isPackaged ? resolveBundledClaudeBinary(process.resourcesPath) : undefined
+  )
   const broker = new PermissionBroker()
   sessionManager = new SessionManager(
     undefined,

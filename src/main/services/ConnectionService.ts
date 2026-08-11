@@ -16,7 +16,9 @@ const execFileAsync = promisify(execFile)
 export class ConnectionService {
   constructor(
     private readonly config: ConfigService,
-    private readonly vault: CredentialVault
+    private readonly vault: CredentialVault,
+    /** パッケージ版で asar 外に展開された同梱 CLI のパス（開発時は undefined） */
+    private readonly bundledExecutablePath?: string
   ) {}
 
   /**
@@ -25,7 +27,11 @@ export class ConnectionService {
    */
   async buildSessionOptions(): Promise<Partial<Options>> {
     const profile = this.config.getActiveProfile()
-    if (!profile) return {}
+    if (!profile) {
+      return this.bundledExecutablePath
+        ? { pathToClaudeCodeExecutable: this.bundledExecutablePath }
+        : {}
+    }
 
     const options: Partial<Options> = {}
     const env: Record<string, string | undefined> = { ...process.env, ...profile.env }
@@ -59,6 +65,10 @@ export class ConnectionService {
     if (profile.binary === 'system') {
       const path = profile.customBinaryPath ?? (await this.detectSystemBinary()).systemPath
       if (path) options.pathToClaudeCodeExecutable = path
+    }
+    if (!options.pathToClaudeCodeExecutable && this.bundledExecutablePath) {
+      // パッケージ版: asar 内からは spawn できないため unpacked 側の実体を明示
+      options.pathToClaudeCodeExecutable = this.bundledExecutablePath
     }
     return options
   }
