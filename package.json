@@ -1,6 +1,6 @@
 {
   "name": "nimbus-code",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Nimbus — a cockpit for piloting Claude Code agents",
   "main": "./out/main/index.js",
   "author": "Idris",
