@@ -5,10 +5,16 @@ import {
   filesChangedSchema,
   type FileEntry
 } from '@shared/files'
-import { languageForPath, monaco } from '../review/monacoSetup'
+import {
+  configureLanguageServices,
+  EDITOR_DEFAULTS,
+  languageForPath,
+  modelUriFor,
+  monaco
+} from '../review/monacoSetup'
 import { monacoThemeFor } from '../review/monacoTheme'
-import { useSessionStore } from '../../stores/sessionStore'
 import { useUiStore } from '../../stores/uiStore'
+import { useActiveRoot } from '../../hooks/useActiveRoot'
 
 function formatSize(size?: number): string {
   if (size === undefined) return ''
@@ -64,13 +70,13 @@ function ExplorerBody({ root }: { root: string }): React.JSX.Element {
   // Monaco エディタの生成・破棄（テーマ変更時は作り直す）
   useEffect(() => {
     if (!containerRef.current) return
+    // TypeScript/JavaScript のコード補完を有効化（冪等）
+    configureLanguageServices()
     const editor = monaco.editor.create(containerRef.current, {
+      ...EDITOR_DEFAULTS,
       value: '',
       language: 'plaintext',
       theme: monacoThemeFor(themeState),
-      automaticLayout: true,
-      minimap: { enabled: false },
-      fontSize: 12,
       readOnly: true
     })
     editorRef.current = editor
@@ -79,11 +85,22 @@ function ExplorerBody({ root }: { root: string }): React.JSX.Element {
     })
     return () => {
       sub.dispose()
-      editor.getModel()?.dispose()
+      // モデルは URI 単位で共有・再利用するため、ここでは破棄しない
+      // （ルート切替時の再マウントでまとめて片付ける）
       editor.dispose()
       editorRef.current = null
     }
   }, [themeState])
+
+  // このルートのモデルを片付ける（ルート切替＝アンマウント時）
+  useEffect(() => {
+    return () => {
+      const prefix = `file://${root.replace(/\/+$/, '')}/`
+      for (const model of monaco.editor.getModels()) {
+        if (model.uri.toString().startsWith(prefix)) model.dispose()
+      }
+    }
+  }, [root])
 
   const openFile = useCallback(
     async (path: string, options?: { keepViewState?: boolean }): Promise<void> => {
@@ -102,9 +119,13 @@ function ExplorerBody({ root }: { root: string }): React.JSX.Element {
           : file.tooLarge
             ? `// ファイルが大きすぎるため表示できません（${formatSize(file.size)}）`
             : file.content
-        const old = editor.getModel()
-        editor.setModel(monaco.editor.createModel(body, languageForPath(path)))
-        old?.dispose()
+        // file:// URI のモデルにすることで、同じワークスペース内の import 解決・
+        // 型情報に基づくコード補完が効く（既に開いたファイルのモデルは再利用）
+        const uri = modelUriFor(root, path)
+        const model =
+          monaco.editor.getModel(uri) ?? monaco.editor.createModel(body, languageForPath(path), uri)
+        if (model.getValue() !== body) model.setValue(body)
+        editor.setModel(model)
         editor.updateOptions({ readOnly })
         if (viewState) editor.restoreViewState(viewState)
         setOpenPath(path)
@@ -139,17 +160,15 @@ function ExplorerBody({ root }: { root: string }): React.JSX.Element {
     return () => clearTimeout(timer)
   }, [initialFile, openFile])
 
-  // Cmd/Ctrl+S で保存
+  // メニュー（⌘S / ファイル→保存）からの保存要求。
+  // 保存自体は非同期（IPC）なので、要求 ID の変化を検知して発火する
+  const saveRequestId = useUiStore((s) => s.saveRequestId)
+  const lastSaveRequestRef = useRef(saveRequestId)
   useEffect(() => {
-    const handler = (event: KeyboardEvent): void => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
-        event.preventDefault()
-        void save()
-      }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [save])
+    if (saveRequestId === lastSaveRequestRef.current) return
+    lastSaveRequestRef.current = saveRequestId
+    void save()
+  }, [saveRequestId, save])
 
   // Claude などによる外部変更の反映（編集中でないファイルのみ自動リロード）
   useEffect(() => {
@@ -253,15 +272,7 @@ function ExplorerBody({ root }: { root: string }): React.JSX.Element {
  * Claude がファイルを書き換えたら、編集中でないファイルは自動で再読み込みする。
  */
 function ExplorerView(): React.JSX.Element {
-  const workspace = useUiStore((s) => s.workspace)
-  const { sessions, activeSessionId } = useSessionStore()
-
-  // 対象ルート: アクティブセッションの cwd（タスクの worktree）優先、なければワークスペース
-  const activeInit = activeSessionId
-    ? sessions[activeSessionId]?.events.find((e) => e.kind === 'session-init')
-    : undefined
-  const sessionCwd = activeInit && 'cwd' in activeInit ? activeInit.cwd : null
-  const root = sessionCwd ?? workspace
+  const root = useActiveRoot()
 
   if (!root) {
     return (

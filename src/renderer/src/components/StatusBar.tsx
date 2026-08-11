@@ -1,29 +1,33 @@
 import { billingModeLabel } from '@shared/profiles'
 import { useSessionStore } from '../stores/sessionStore'
 import { useUiStore } from '../stores/uiStore'
+import { useActiveRoot } from '../hooks/useActiveRoot'
+
+const VIEW_LABELS: Record<string, string> = {
+  cockpit: 'コックピット',
+  explorer: 'エディタ',
+  board: 'ボード',
+  review: 'レビュー',
+  diagnostics: '診断',
+  settings: '設定'
+}
 
 /**
  * F-7-3: 課金モードの常時表示。
  * ユーザーが自分の請求形態を誤認しないことは、このプロダクトの信頼性そのものである。
+ * （ビュー切替とフォルダを開くは上部メニュー／アクティビティバーへ移設）
  */
 function StatusBar(): React.JSX.Element {
   const sessions = useSessionStore((s) => s.sessions)
-  const { view, setView, connection, lastApiKeySource, workspace, setWorkspace } = useUiStore()
+  const { view, connection, lastApiKeySource } = useUiStore()
+  const root = useActiveRoot()
 
   // セッション横断の累計（各セッションの totalCostUsd は累積値なのでセッション毎に最新値を合算）
   const totalCost = Object.values(sessions).reduce((sum, s) => sum + (s.totalCostUsd ?? 0), 0)
   const activeProfile = connection?.profiles.find((p) => p.id === connection.activeProfileId)
   const label = billingModeLabel(lastApiKeySource ?? undefined, activeProfile?.method)
   const isSubscription = lastApiKeySource === 'oauth' || lastApiKeySource === 'none'
-
-  const handleOpenWorkspace = async (): Promise<void> => {
-    try {
-      const result = await window.nimbus.workspace.open()
-      if (result.path) setWorkspace(result.path)
-    } catch (error) {
-      console.error('[nimbus:renderer] workspace open failed', error)
-    }
-  }
+  const running = Object.values(sessions).filter((s) => s.status === 'running').length
 
   return (
     <footer className="status-bar">
@@ -33,50 +37,14 @@ function StatusBar(): React.JSX.Element {
         {isSubscription && totalCost > 0 && ` · 推定 $${totalCost.toFixed(2)} 相当`}
       </span>
       <span className="status-bar-right">
-        <button className="btn btn-small" onClick={() => void handleOpenWorkspace()}>
-          {workspace ? `📁 ${workspace.split('/').pop()}` : '📁 フォルダを開く'}
-        </button>
-        <span className="status-bar-profile">
-          {activeProfile
-            ? `プロファイル: ${activeProfile.name}`
-            : 'プロファイル: 既定（CLI ログイン）'}
+        {running > 0 && <span className="status-bar-running">● 実行中 {running}</span>}
+        <span>{VIEW_LABELS[view] ?? view}</span>
+        <span className="status-bar-profile" title={root ?? undefined}>
+          {root ? `📁 ${root.split('/').pop()}` : 'フォルダ未選択'}
         </span>
-        <button
-          className={`btn btn-small ${view === 'cockpit' ? 'btn-primary' : ''}`}
-          onClick={() => setView('cockpit')}
-        >
-          コックピット
-        </button>
-        <button
-          className={`btn btn-small ${view === 'explorer' ? 'btn-primary' : ''}`}
-          onClick={() => setView('explorer')}
-        >
-          エディタ
-        </button>
-        <button
-          className={`btn btn-small ${view === 'board' ? 'btn-primary' : ''}`}
-          onClick={() => setView('board')}
-        >
-          ボード
-        </button>
-        <button
-          className={`btn btn-small ${view === 'review' ? 'btn-primary' : ''}`}
-          onClick={() => setView('review')}
-        >
-          レビュー
-        </button>
-        <button
-          className={`btn btn-small ${view === 'diagnostics' ? 'btn-primary' : ''}`}
-          onClick={() => setView('diagnostics')}
-        >
-          診断
-        </button>
-        <button
-          className={`btn btn-small ${view === 'settings' ? 'btn-primary' : ''}`}
-          onClick={() => setView('settings')}
-        >
-          設定
-        </button>
+        <span className="status-bar-profile">
+          {activeProfile ? activeProfile.name : '既定（CLI ログイン）'}
+        </span>
       </span>
     </footer>
   )

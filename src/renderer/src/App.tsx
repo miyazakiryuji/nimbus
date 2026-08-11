@@ -9,9 +9,12 @@ import DiagnosticsView from './features/diagnostics/DiagnosticsView'
 import ExplorerView from './features/explorer/ExplorerView'
 import ReviewView from './features/review/ReviewView'
 import SettingsView from './features/settings/SettingsView'
+import ActivityBar from './components/ActivityBar'
+import MenuBar from './components/MenuBar'
 import StatusBar from './components/StatusBar'
 import { useThemeSync } from './theme/useThemeSync'
 import { useSessionSync } from './hooks/useSessionSync'
+import { useAppActions } from './hooks/useAppActions'
 import { useUiStore } from './stores/uiStore'
 
 const VIEWS = ['cockpit', 'explorer', 'board', 'review', 'diagnostics', 'settings'] as const
@@ -27,6 +30,7 @@ function App(): React.JSX.Element {
   useThemeSync()
   // 全ビュー共通でセッションを購読する（コックピット以外でも状態が届くように）
   useSessionSync()
+  const actions = useAppActions()
 
   useEffect(() => {
     // 開発・撮影用の初期表示指定（通常起動では null）
@@ -46,20 +50,24 @@ function App(): React.JSX.Element {
 
   return (
     <div className="app">
+      <MenuBar actions={actions} />
       {view !== 'settings' && <InboxBanner />}
-      <div className="app-main">
-        {view === 'cockpit' && (
-          <div className="cockpit">
-            <SessionsPanel />
-            <ChatView />
-            <ContextPanel />
-          </div>
-        )}
-        {view === 'explorer' && <ExplorerView />}
-        {view === 'board' && <BoardView />}
-        {view === 'review' && <ReviewView />}
-        {view === 'diagnostics' && <DiagnosticsView />}
-        {view === 'settings' && <SettingsView />}
+      <div className="app-body">
+        <ActivityBar />
+        <div className="app-main">
+          {view === 'cockpit' && (
+            <div className="cockpit">
+              <SessionsPanel />
+              <ChatView />
+              <ContextPanel />
+            </div>
+          )}
+          {view === 'explorer' && <ExplorerView />}
+          {view === 'board' && <BoardView />}
+          {view === 'review' && <ReviewView />}
+          {view === 'diagnostics' && <DiagnosticsView />}
+          {view === 'settings' && <SettingsView />}
+        </div>
       </div>
       <StatusBar />
     </div>

@@ -689,10 +689,151 @@ body {
   flex-direction: column;
 }
 
-.app-main {
+.app-body {
   flex: 1;
   min-height: 0;
   display: flex;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+
+/* 上部メニューバー（Windows の VS Code 風） */
+.menubar {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0 0.5rem;
+  height: 2rem;
+  flex-shrink: 0;
+  background: var(--nimbus-color-background-soft);
+  border-bottom: 1px solid var(--nimbus-color-border);
+  position: relative;
+  z-index: 20;
+  -webkit-app-region: drag;
+}
+
+.menubar-brand {
+  color: var(--nimbus-color-accent);
+  font-weight: 600;
+  font-size: 0.78rem;
+  padding: 0 0.6rem 0 4.2rem;
+}
+
+.menubar-menu {
+  position: relative;
+  -webkit-app-region: no-drag;
+}
+
+.menubar-button {
+  background: transparent;
+  border: none;
+  color: var(--nimbus-color-foreground);
+  font-size: 0.78rem;
+  font-family: var(--nimbus-font-family);
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.menubar-button:hover,
+.menubar-button-open {
+  background: var(--nimbus-color-user-bubble);
+}
+
+.menubar-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 15rem;
+  list-style: none;
+  background: var(--nimbus-color-background-soft);
+  border: 1px solid var(--nimbus-color-border);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 45%);
+  padding: 0.25rem;
+  z-index: 30;
+}
+
+.menubar-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  width: 100%;
+  padding: 0.3rem 0.6rem;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--nimbus-color-foreground);
+  font-size: 0.78rem;
+  font-family: var(--nimbus-font-family);
+  text-align: left;
+  cursor: pointer;
+}
+
+.menubar-item:hover {
+  background: var(--nimbus-color-user-bubble);
+}
+
+.menubar-shortcut {
+  color: var(--nimbus-color-foreground-muted);
+  font-size: 0.7rem;
+}
+
+.menubar-title {
+  margin-left: auto;
+  margin-right: auto;
+  color: var(--nimbus-color-foreground-muted);
+  font-size: 0.75rem;
+}
+
+/* 左アクティビティバー */
+.activitybar {
+  width: 3rem;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding-top: 0.4rem;
+  background: var(--nimbus-color-background-soft);
+  border-right: 1px solid var(--nimbus-color-border);
+}
+
+.activitybar-item {
+  width: 2.4rem;
+  height: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  opacity: 0.55;
+}
+
+.activitybar-item:hover {
+  opacity: 0.9;
+}
+
+.activitybar-item-active {
+  opacity: 1;
+  border-left-color: var(--nimbus-color-accent);
+  background: var(--nimbus-color-user-bubble);
+}
+
+.activitybar-icon {
+  font-size: 1.05rem;
+}
+
+.status-bar-running {
+  color: var(--nimbus-color-accent);
 }
 
 .cockpit {

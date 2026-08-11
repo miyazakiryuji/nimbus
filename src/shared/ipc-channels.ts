@@ -47,6 +47,8 @@ export const IPC_CHANNELS = {
   /** main → renderer へのファイル変更 push（Claude の編集を反映） */
   filesChanged: 'nimbus:files:changed',
   uiInitialView: 'nimbus:ui:initial-view',
+  /** main → renderer へのメニュー操作 push（ネイティブメニューのショートカット） */
+  menuAction: 'nimbus:menu:action',
   taskCreate: 'nimbus:task:create',
   taskStart: 'nimbus:task:start',
   taskComplete: 'nimbus:task:complete',

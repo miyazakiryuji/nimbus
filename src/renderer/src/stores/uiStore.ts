@@ -18,6 +18,12 @@ interface UiStoreState {
   /** 起動時に自動で開くファイル（開発・撮影用。通常は null） */
   initialFile: string | null
   setInitialFile: (path: string | null) => void
+  /** メニュー「保存」からエディタへ保存を依頼するためのカウンタ（0 は未要求） */
+  saveRequestId: number
+  requestSave: () => void
+  /** ボードのタスク作成フォームの開閉（メニューからも開けるようストアで持つ） */
+  boardFormOpen: boolean
+  setBoardFormOpen: (open: boolean) => void
 }
 
 export const useUiStore = create<UiStoreState>((set) => ({
@@ -32,5 +38,9 @@ export const useUiStore = create<UiStoreState>((set) => ({
   themeState: null,
   setThemeState: (themeState) => set({ themeState }),
   initialFile: null,
-  setInitialFile: (initialFile) => set({ initialFile })
+  setInitialFile: (initialFile) => set({ initialFile }),
+  saveRequestId: 0,
+  requestSave: () => set((s) => ({ saveRequestId: s.saveRequestId + 1 })),
+  boardFormOpen: false,
+  setBoardFormOpen: (boardFormOpen) => set({ boardFormOpen })
 }))

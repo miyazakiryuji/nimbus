@@ -1,11 +1,13 @@
 import { join } from 'path'
 import { homedir } from 'os'
-import { app, BrowserWindow, ipcMain, safeStorage } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, safeStorage, shell } from 'electron'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import { themeSchema } from '@shared/theme'
+import { NIMBUS_REPO_URL } from '@shared/menu'
 import { filesChangedSchema } from '@shared/files'
 import { IPC_CHANNELS } from '@shared/ipc-channels'
 import { createMainWindow } from './window'
+import { buildMenuTemplate } from './menu'
 import { SessionManager } from './services/SessionManager'
 import { createSanitizer } from './services/sanitizer'
 import { ConfigService } from './services/ConfigService'
@@ -138,6 +140,18 @@ app.whenReady().then(() => {
     view: process.env['NIMBUS_INITIAL_VIEW'] ?? null,
     file: process.env['NIMBUS_INITIAL_FILE'] ?? null
   }))
+  // ネイティブメニュー（ショートカット担当。アプリ内メニューバーと同じアクション体系）
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate(
+      buildMenuTemplate(
+        {
+          send: (action) => broadcastToWindows(IPC_CHANNELS.menuAction, action),
+          openRepo: () => shell.openExternal(NIMBUS_REPO_URL)
+        },
+        { isMac: process.platform === 'darwin', appName: 'Nimbus' }
+      )
+    )
+  )
   createMainWindow()
 
   // E2E 起動確認用スモーク: NIMBUS_SMOKE=1 で 1 往復を自動実行する（docs/testing 参照）

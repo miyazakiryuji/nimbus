@@ -130,7 +130,14 @@ const nimbus = {
     }
   },
   ui: {
-    initial: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.uiInitialView)
+    initial: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.uiInitialView),
+    onMenuAction: (callback: (action: unknown) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, payload: unknown): void => callback(payload)
+      ipcRenderer.on(IPC_CHANNELS.menuAction, listener)
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.menuAction, listener)
+      }
+    }
   },
   tasks: {
     list: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.taskList),

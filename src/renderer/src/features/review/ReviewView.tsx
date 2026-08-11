@@ -11,6 +11,7 @@ import { languageForPath, monaco } from './monacoSetup'
 import { monacoThemeFor } from './monacoTheme'
 import { TERMINAL_STATUSES, useSessionStore } from '../../stores/sessionStore'
 import { useUiStore } from '../../stores/uiStore'
+import { useActiveRoot } from '../../hooks/useActiveRoot'
 
 const historySchema = z.array(gitCheckpointSchema)
 
@@ -32,7 +33,6 @@ function fileStatusLabel(index: string, workingDir: string): string {
  * 変更ファイル一覧 → Monaco diff → ファイル巻き戻し / チェックポイント / レビューコメント送信。
  */
 function ReviewView(): React.JSX.Element {
-  const workspace = useUiStore((s) => s.workspace)
   const themeState = useUiStore((s) => s.themeState)
   const { sessions, activeSessionId } = useSessionStore()
   const [status, setStatus] = useState<GitStatusResult | null>(null)
@@ -46,13 +46,8 @@ function ReviewView(): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<monaco.editor.IStandaloneDiffEditor | null>(null)
 
-  // レビュー対象 cwd: アクティブセッションの cwd を優先（タスクの worktree を見られる）。
-  // なければ開いているワークスペース（メインリポジトリ）
-  const activeInit = activeSessionId
-    ? sessions[activeSessionId]?.events.find((e) => e.kind === 'session-init')
-    : undefined
-  const sessionCwd = activeInit && 'cwd' in activeInit ? activeInit.cwd : null
-  const targetCwd = sessionCwd ?? workspace
+  // レビュー対象 cwd（アクティブセッションの worktree 優先。共通フックで一元化）
+  const targetCwd = useActiveRoot()
 
   const refresh = useCallback(async (): Promise<void> => {
     if (!targetCwd) return

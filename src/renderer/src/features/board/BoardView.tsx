@@ -31,8 +31,10 @@ function eventSummary(event: NimbusEvent): string | null {
 function BoardView(): React.JSX.Element {
   const { sessions, setActive } = useSessionStore()
   const { workspace, setView } = useUiStore()
+  // フォームの開閉はストア管理（メニュー「新しいタスク」からも開ける）
+  const showForm = useUiStore((s) => s.boardFormOpen)
+  const setShowForm = useUiStore((s) => s.setBoardFormOpen)
   const [tasks, setTasks] = useState<KanbanTask[]>([])
-  const [showForm, setShowForm] = useState(false)
   const [title, setTitle] = useState('')
   const [prompt, setPrompt] = useState('')
   const [message, setMessage] = useState<string | null>(null)
@@ -66,7 +68,7 @@ function BoardView(): React.JSX.Element {
     } catch (error) {
       setMessage(`作成に失敗: ${error instanceof Error ? error.message : String(error)}`)
     }
-  }, [workspace, title, prompt])
+  }, [workspace, title, prompt, setShowForm])
 
   const handleStart = useCallback(async (task: KanbanTask): Promise<void> => {
     try {
