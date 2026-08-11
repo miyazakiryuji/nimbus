@@ -83,15 +83,16 @@ export class GitService {
     }))
   }
 
-  /** ステージ（git add）。paths は検証済み相対パスのみ */
+  /** ステージ（git add）。paths は検証済み相対パスのみ。`--` でフラグ名ファイルを無害化 */
   async stage(cwd: string, paths: string[]): Promise<void> {
     for (const p of paths) assertInsideRepo(cwd, p)
-    await simpleGit(cwd).add(paths)
+    await simpleGit(cwd).raw(['add', '--', ...paths])
   }
 
+  // 未コミット（unborn HEAD）でも動くよう `git reset --` を使う（restore --staged は HEAD 必須）
   async unstage(cwd: string, paths: string[]): Promise<void> {
     for (const p of paths) assertInsideRepo(cwd, p)
-    await simpleGit(cwd).raw(['restore', '--staged', '--', ...paths])
+    await simpleGit(cwd).raw(['reset', '-q', '--', ...paths])
   }
 
   async stageAll(cwd: string): Promise<void> {
@@ -99,7 +100,7 @@ export class GitService {
   }
 
   async unstageAll(cwd: string): Promise<void> {
-    await simpleGit(cwd).raw(['restore', '--staged', '.'])
+    await simpleGit(cwd).raw(['reset', '-q'])
   }
 
   /** ステージ済みの内容をコミットする */

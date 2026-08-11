@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { z } from 'zod'
 import { KANBAN_COLUMNS, taskSchema, type KanbanTask } from '@shared/tasks'
 import type { NimbusEvent } from '@shared/events'
@@ -69,8 +69,12 @@ function BoardView(): React.JSX.Element {
   }, [workspace, title, prompt])
 
   const handleStart = useCallback(async (task: KanbanTask): Promise<void> => {
-    const result = await window.nimbus.tasks.start({ taskId: task.taskId })
-    if (!result.started && result.reason) setMessage(result.reason)
+    try {
+      const result = await window.nimbus.tasks.start({ taskId: task.taskId })
+      if (!result.started && result.reason) setMessage(result.reason)
+    } catch (error) {
+      setMessage(`開始に失敗: ${error instanceof Error ? error.message : String(error)}`)
+    }
   }, [])
 
   const handleOpen = useCallback(
@@ -83,24 +87,35 @@ function BoardView(): React.JSX.Element {
   )
 
   const handleComplete = useCallback(async (task: KanbanTask): Promise<void> => {
+    const running = task.state === 'running' || task.state === 'awaiting-approval'
+    const warn = running ? '実行中のセッションを中断し、' : ''
     if (
       !confirm(
-        `「${task.title}」を完了します。worktree は破棄されます（ブランチ ${task.branch} は残ります）。よろしいですか？`
+        `「${task.title}」を完了します。${warn}未コミットの変更はブランチ ${task.branch} へ自動コミットして保存し、作業ツリーを破棄します。よろしいですか？`
       )
     )
       return
     try {
-      await window.nimbus.tasks.complete({ taskId: task.taskId })
+      const result = await window.nimbus.tasks.complete({ taskId: task.taskId })
+      setMessage(
+        result.wipCommit
+          ? `完了。未コミットの変更を ${task.branch} に保存しました（${result.wipCommit.slice(0, 7)}）`
+          : '完了しました'
+      )
     } catch (error) {
       setMessage(`完了に失敗: ${error instanceof Error ? error.message : String(error)}`)
     }
   }, [])
 
-  // セッション横断イベントフィード（直近 30 件）
-  const feed = Object.values(sessions)
-    .flatMap((s) => s.events.map((e) => ({ event: e, model: s.model })))
-    .sort((a, b) => b.event.timestamp - a.event.timestamp)
-    .slice(0, 30)
+  // セッション横断イベントフィード（直近 30 件）。イベント数が多いので memo 化
+  const feed = useMemo(
+    () =>
+      Object.values(sessions)
+        .flatMap((s) => s.events.map((e) => ({ event: e, model: s.model })))
+        .sort((a, b) => b.event.timestamp - a.event.timestamp)
+        .slice(0, 30),
+    [sessions]
+  )
 
   return (
     <div className="board">

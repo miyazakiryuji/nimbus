@@ -21,15 +21,21 @@ export function registerReviewIpc(
   store: Store,
   optionsProvider?: () => Promise<Partial<Options>>
 ): void {
+  const workspaceOpenResponseSchema = z.object({ path: z.string().nullable() })
+  const gitCommitResponseSchema = z.object({ hash: z.string() })
+  const generateCommitResponseSchema = z.object({ message: z.string() })
+
   ipcMain.handle(IPC_CHANNELS.workspaceOpen, async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openDirectory', 'createDirectory'],
       title: 'ワークスペースを開く'
     })
-    if (result.canceled || result.filePaths.length === 0) return { path: null }
+    if (result.canceled || result.filePaths.length === 0) {
+      return workspaceOpenResponseSchema.parse({ path: null })
+    }
     const path = result.filePaths[0]
     store.touchWorkspace(path)
-    return { path }
+    return workspaceOpenResponseSchema.parse({ path })
   })
 
   ipcMain.handle(IPC_CHANNELS.gitStatus, async (_event, raw: unknown) => {
@@ -90,12 +96,12 @@ export function registerReviewIpc(
 
   ipcMain.handle(IPC_CHANNELS.gitCommit, async (_event, raw: unknown) => {
     const req = gitCommitRequestSchema.parse(raw)
-    return git.commit(req.cwd, req.message)
+    return gitCommitResponseSchema.parse(await git.commit(req.cwd, req.message))
   })
 
   ipcMain.handle(IPC_CHANNELS.gitGenerateCommitMessage, async (_event, raw: unknown) => {
     const req = gitCwdRequestSchema.parse(raw)
     const message = await generateCommitMessage(req.cwd, git, optionsProvider)
-    return { message }
+    return generateCommitResponseSchema.parse({ message })
   })
 }

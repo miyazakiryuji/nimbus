@@ -7,6 +7,7 @@ import type { TaskService } from '../services/TaskService'
 import { broadcastToWindows } from './broadcast'
 
 const taskListSchema = z.array(taskSchema)
+const taskStartResponseSchema = z.object({ started: z.boolean(), reason: z.string().optional() })
 
 /** F-5 カンバンの IPC */
 export function registerTaskIpc(tasks: TaskService): void {
@@ -19,13 +20,13 @@ export function registerTaskIpc(tasks: TaskService): void {
 
   ipcMain.handle(IPC_CHANNELS.taskStart, async (_event, raw: unknown) => {
     const req = taskIdRequestSchema.parse(raw)
-    return tasks.startTask(req.taskId)
+    return taskStartResponseSchema.parse(await tasks.startTask(req.taskId))
   })
 
   ipcMain.handle(IPC_CHANNELS.taskComplete, async (_event, raw: unknown) => {
     const req = taskIdRequestSchema.parse(raw)
-    await tasks.completeTask(req.taskId)
-    return { ok: true }
+    const { wipCommit } = await tasks.completeTask(req.taskId)
+    return { ok: true, wipCommit }
   })
 
   tasks.on('changed', (list: KanbanTask[]) => {

@@ -117,7 +117,7 @@ const nimbus = {
       ipcRenderer.invoke(IPC_CHANNELS.taskCreate, req),
     start: (req: TaskIdRequest): Promise<{ started: boolean; reason?: string }> =>
       ipcRenderer.invoke(IPC_CHANNELS.taskStart, req),
-    complete: (req: TaskIdRequest): Promise<{ ok: boolean }> =>
+    complete: (req: TaskIdRequest): Promise<{ ok: boolean; wipCommit?: string }> =>
       ipcRenderer.invoke(IPC_CHANNELS.taskComplete, req),
     onChanged: (callback: (list: unknown) => void): (() => void) => {
       const listener = (_event: IpcRendererEvent, payload: unknown): void => callback(payload)

@@ -45,11 +45,13 @@ function ReviewView(): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<monaco.editor.IStandaloneDiffEditor | null>(null)
 
-  // レビュー対象 cwd: ワークスペース優先、なければアクティブセッションの cwd
+  // レビュー対象 cwd: アクティブセッションの cwd を優先（タスクの worktree を見られる）。
+  // なければ開いているワークスペース（メインリポジトリ）
   const activeInit = activeSessionId
     ? sessions[activeSessionId]?.events.find((e) => e.kind === 'session-init')
     : undefined
-  const targetCwd = workspace ?? (activeInit && 'cwd' in activeInit ? activeInit.cwd : null)
+  const sessionCwd = activeInit && 'cwd' in activeInit ? activeInit.cwd : null
+  const targetCwd = sessionCwd ?? workspace
 
   const refresh = useCallback(async (): Promise<void> => {
     if (!targetCwd) return
@@ -162,9 +164,21 @@ function ReviewView(): React.JSX.Element {
     [targetCwd, refresh]
   )
 
+  // マージ競合（UU/AA/DD/AU/UA/DU/UD）は誤ってステージ/コミットさせない
+  const isConflict = (index: string, workingDir: string): boolean =>
+    index === 'U' ||
+    workingDir === 'U' ||
+    (index === 'A' && workingDir === 'A') ||
+    (index === 'D' && workingDir === 'D')
+  const allFiles = status?.files ?? []
+  const conflictFiles = allFiles.filter((f) => isConflict(f.index, f.workingDir))
   // VS Code 風 SCM: ステージ済み（index 側にコードあり）と変更（working tree 側）に分ける
-  const stagedFiles = (status?.files ?? []).filter((f) => f.index !== '' && f.index !== '?')
-  const unstagedFiles = (status?.files ?? []).filter((f) => f.workingDir !== '' || f.index === '?')
+  const stagedFiles = allFiles.filter(
+    (f) => !isConflict(f.index, f.workingDir) && f.index !== '' && f.index !== '?'
+  )
+  const unstagedFiles = allFiles.filter(
+    (f) => !isConflict(f.index, f.workingDir) && (f.workingDir !== '' || f.index === '?')
+  )
 
   const scm = useCallback(
     async (
@@ -259,6 +273,30 @@ function ReviewView(): React.JSX.Element {
           </button>
         </div>
         {status && !status.isRepo && <p className="settings-muted">Git リポジトリではありません</p>}
+
+        {conflictFiles.length > 0 && (
+          <>
+            <div className="review-side-header">
+              <span className="review-conflict-title">⚠ 競合 ({conflictFiles.length})</span>
+            </div>
+            <ul className="review-files">
+              {conflictFiles.map((f) => (
+                <li key={`c-${f.path}`}>
+                  <button
+                    className={`review-file ${selectedFile === f.path ? 'review-file-active' : ''}`}
+                    onClick={() => void openDiff(f.path)}
+                  >
+                    <span className="review-file-status review-conflict-title">競合</span>
+                    <span className="review-file-path">{f.path}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="settings-muted review-conflict-note">
+              競合はエディタや Claude で解決してから、変更としてステージしてください
+            </p>
+          </>
+        )}
 
         <div className="review-side-header">
           <span>ステージ済み ({stagedFiles.length})</span>

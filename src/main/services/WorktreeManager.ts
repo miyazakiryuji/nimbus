@@ -41,13 +41,32 @@ export class WorktreeManager {
     return { path: dir, branch }
   }
 
-  /** worktree を破棄する（ブランチは残す — マージはユーザーの通常フローで行う） */
-  async remove(repoCwd: string, worktreePath: string): Promise<void> {
-    if (!worktreePath.startsWith(this.baseDir)) {
+  /**
+   * worktree を破棄する（ブランチは残す — マージはユーザーの通常フローで行う）。
+   * §critical 修正: 削除前に未コミットの成果をタスクブランチへ WIP コミットして保存する
+   * （`--force` は未コミット変更を無警告で消すため、「ブランチは残る」の約束を実体化させる）。
+   * @returns 保存のために WIP コミットを作成した場合そのハッシュ
+   */
+  async remove(repoCwd: string, worktreePath: string): Promise<{ wipCommit?: string }> {
+    if (!this.isManaged(worktreePath)) {
       throw new Error('Nimbus 管理外のディレクトリは破棄できません')
+    }
+    let wipCommit: string | undefined
+    const wt = simpleGit(worktreePath)
+    try {
+      const status = await wt.status()
+      if (!status.isClean()) {
+        await wt.add(['-A'])
+        const result = await wt.commit('nimbus: WIP (タスク完了時の自動保存)')
+        wipCommit = result.commit || undefined
+      }
+    } catch (error) {
+      // worktree が既に壊れている/存在しない場合は保存をスキップして破棄へ進む
+      console.warn('[nimbus:worktree] WIP save skipped', error)
     }
     const git = simpleGit(repoCwd)
     await git.raw(['worktree', 'remove', '--force', worktreePath])
+    return { wipCommit }
   }
 
   async list(repoCwd: string): Promise<WorktreeInfo[]> {
@@ -72,6 +91,8 @@ export class WorktreeManager {
 
   /** このマネージャが管理する worktree か（破棄可否の判定に使用） */
   isManaged(worktreePath: string): boolean {
-    return worktreePath.startsWith(this.baseDir)
+    // 末尾セパレータ付きで比較し、prefix-sibling（例 baseDir + '-evil'）の誤判定を防ぐ
+    const base = this.baseDir.endsWith('/') ? this.baseDir : this.baseDir + '/'
+    return worktreePath === this.baseDir || worktreePath.startsWith(base)
   }
 }

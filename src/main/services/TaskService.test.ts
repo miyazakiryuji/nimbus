@@ -14,6 +14,7 @@ function setup(options?: { maxConcurrent?: number; persisted?: KanbanTask[] }): 
     createSession: ReturnType<typeof vi.fn>
     isActive: (id: string) => boolean
     close: ReturnType<typeof vi.fn>
+    interrupt: ReturnType<typeof vi.fn>
   }
   broker: EventEmitter & { list: ReturnType<typeof vi.fn> }
   worktrees: { create: ReturnType<typeof vi.fn>; remove: ReturnType<typeof vi.fn> }
@@ -23,7 +24,8 @@ function setup(options?: { maxConcurrent?: number; persisted?: KanbanTask[] }): 
   const sessions = Object.assign(new EventEmitter(), {
     createSession: vi.fn(async () => `session-${++sessionCounter}`),
     isActive: () => true,
-    close: vi.fn()
+    close: vi.fn(),
+    interrupt: vi.fn(async () => undefined)
   })
   const broker = Object.assign(new EventEmitter(), {
     list: vi.fn(() => [] as Array<{ sessionId: string }>)
@@ -33,7 +35,7 @@ function setup(options?: { maxConcurrent?: number; persisted?: KanbanTask[] }): 
       path: `/wt/${title}`,
       branch: `nimbus/${title}`
     })),
-    remove: vi.fn(async () => undefined)
+    remove: vi.fn(async () => ({ wipCommit: undefined as string | undefined }))
   }
   const store = {
     upsertTask: vi.fn(),
@@ -114,7 +116,7 @@ describe('TaskService（F-5 カンバン状態遷移）', () => {
     void sessions
   })
 
-  it('完了: セッション close＋worktree 破棄＋done、永続化される', async () => {
+  it('完了: 実行中セッションを中断→close→worktree 破棄→done、永続化される', async () => {
     const { service, sessions, worktrees, store } = setup()
     const task = await service.createTask({
       title: 'd',
@@ -123,10 +125,29 @@ describe('TaskService（F-5 カンバン状態遷移）', () => {
       autoStart: true
     })
     await service.completeTask(task.taskId)
+    expect(sessions.interrupt).toHaveBeenCalled()
     expect(sessions.close).toHaveBeenCalled()
     expect(worktrees.remove).toHaveBeenCalledWith('/repo', '/wt/d')
     expect(service.list().find((t) => t.taskId === task.taskId)?.state).toBe('done')
     expect(store.upsertTask).toHaveBeenCalled()
+  })
+
+  it('二重起動ガード: 同一タスクの並行 startTask で createSession は 1 回だけ', async () => {
+    const { service, sessions } = setup({ maxConcurrent: 5 })
+    // autoStart:false で pending のまま作る
+    const task = await service.createTask({
+      title: 'race',
+      prompt: 'p',
+      repoCwd: '/repo',
+      autoStart: false
+    })
+    const [r1, r2] = await Promise.all([
+      service.startTask(task.taskId),
+      service.startTask(task.taskId)
+    ])
+    const started = [r1, r2].filter((r) => r.started)
+    expect(started).toHaveLength(1)
+    expect(sessions.createSession).toHaveBeenCalledTimes(1)
   })
 
   it('再起動復元: running/awaiting-approval は review に倒れる・done/pending は維持', () => {

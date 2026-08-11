@@ -141,4 +141,30 @@ describe('GitService（F-4 差分レビュー、実 git repo 統合）', () => {
   it('SCM: stage のパス検証（脱出拒否）', async () => {
     await expect(service.stage(dir, ['../evil.txt'])).rejects.toThrow('escapes')
   })
+
+  it('SCM: 未コミット（unborn HEAD）でも stage → unstage が動く', async () => {
+    const fresh = mkdtempSync(join(tmpdir(), 'nimbus-unborn-'))
+    try {
+      git(fresh, 'init', '-b', 'main')
+      git(fresh, 'config', 'user.email', 'test@example.com')
+      git(fresh, 'config', 'user.name', 'test')
+      writeFileSync(join(fresh, 'first.txt'), 'x\n')
+      await service.stage(fresh, ['first.txt'])
+      let status = await service.status(fresh)
+      expect(status.files.find((f) => f.path === 'first.txt')?.index).toBe('A')
+      // restore --staged は HEAD 不在で失敗するが reset は動く
+      await service.unstage(fresh, ['first.txt'])
+      status = await service.status(fresh)
+      expect(status.files.find((f) => f.path === 'first.txt')?.workingDir).toBe('?')
+    } finally {
+      rmSync(fresh, { recursive: true, force: true })
+    }
+  })
+
+  it('SCM: フラグ名のファイル（先頭ハイフン）も安全に stage できる（-- 付与）', async () => {
+    writeFileSync(join(dir, '--oops.txt'), 'weird\n')
+    await service.stage(dir, ['--oops.txt'])
+    const status = await service.status(dir)
+    expect(status.files.find((f) => f.path.includes('oops'))?.index).toBe('A')
+  })
 })

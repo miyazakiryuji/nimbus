@@ -44,13 +44,28 @@ describe('WorktreeManager（F-5、実 git repo 統合）', () => {
     expect(listed.some((w) => realpathSync(w.path) === real && w.branch === wt.branch)).toBe(true)
   })
 
-  it('remove: worktree を破棄する（ブランチは残す）', async () => {
+  it('remove: 未コミット成果をブランチへ WIP 保存してから破棄する（データ消失防止）', async () => {
     const wt = await manager.create(repo, 'task')
     writeFileSync(join(wt.path, 'wip.txt'), 'in progress\n')
-    await manager.remove(repo, wt.path)
+    writeFileSync(join(wt.path, 'a.txt'), 'edited by claude\n')
+    const result = await manager.remove(repo, wt.path)
     expect(existsSync(wt.path)).toBe(false)
-    // ブランチはマージ用に残る
+    expect(result.wipCommit).toBeTruthy()
+    // ブランチに成果がコミットされて残っている（--force で消えていない）
     expect(git(repo, 'branch', '--list', wt.branch).trim()).not.toBe('')
+    expect(git(repo, 'show', `${wt.branch}:wip.txt`)).toContain('in progress')
+    expect(git(repo, 'show', `${wt.branch}:a.txt`)).toContain('edited by claude')
+  })
+
+  it('remove: 変更が無ければ WIP コミットを作らない', async () => {
+    const wt = await manager.create(repo, 'clean')
+    const result = await manager.remove(repo, wt.path)
+    expect(result.wipCommit).toBeUndefined()
+  })
+
+  it('isManaged: prefix-sibling ディレクトリを管理外と判定する', () => {
+    expect(manager.isManaged(join(base, 'repo', 'x'))).toBe(true)
+    expect(manager.isManaged(base + '-evil/x')).toBe(false)
   })
 
   it('remove: 管理外ディレクトリは拒否する', async () => {

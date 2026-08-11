@@ -263,6 +263,14 @@ body {
   flex-shrink: 0;
 }
 
+.review-conflict-title {
+  color: var(--nimbus-color-error);
+}
+
+.review-conflict-note {
+  padding: 0 0.8rem;
+}
+
 .review-file-path {
   word-break: break-all;
 }

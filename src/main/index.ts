@@ -1,4 +1,5 @@
 import { join } from 'path'
+import { homedir } from 'os'
 import { app, BrowserWindow, safeStorage } from 'electron'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import { themeSchema } from '@shared/theme'
@@ -32,9 +33,9 @@ if (process.env['NIMBUS_USERDATA']) {
   app.setPath('userData', process.env['NIMBUS_USERDATA'])
 }
 
-const sanitizer = createSanitizer(process.env)
+const sanitizer = createSanitizer(process.env, homedir())
 const config = new ConfigService()
-// 診断ビュー用: 以後の console 出力・未捕捉例外をサニタイズ付きで記録（§6-2/6-3）
+// 診断ビュー用: 以後の console 出力をサニタイズ付きで記録（§6-2/6-3・ホームパスは ~ に置換）
 const logBuffer = new LogBuffer(sanitizer.sanitizeString)
 logBuffer.install()
 let vault: CredentialVault

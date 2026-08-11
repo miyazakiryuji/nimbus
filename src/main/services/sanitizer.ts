@@ -35,7 +35,11 @@ export interface Sanitizer {
   sanitizeValue: <T>(value: T) => T
 }
 
-export function createSanitizer(env: Record<string, string | undefined> = process.env): Sanitizer {
+export function createSanitizer(
+  env: Record<string, string | undefined> = process.env,
+  /** ホームディレクトリ（診断ログに OS ユーザー名が漏れるのを防ぐため ~ へ置換） */
+  homeDir?: string
+): Sanitizer {
   // 機密らしい環境変数の値を長い順に literal マスク（部分一致の食い合いを防ぐ）
   const envSecrets = Object.entries(env)
     .filter(
@@ -50,8 +54,15 @@ export function createSanitizer(env: Record<string, string | undefined> = proces
       re: new RegExp(escapeRegExp(value as string), 'g')
     }))
 
+  const home = homeDir ?? env['HOME'] ?? env['USERPROFILE']
+  const homeRe = home ? new RegExp(escapeRegExp(home), 'g') : undefined
+
   const sanitizeString = (input: string): string => {
     let out = input
+    if (homeRe) {
+      // ホームパスは ~ に置換（パス中の OS ユーザー名の露出を防ぐ）
+      out = out.replace(homeRe, '~')
+    }
     for (const { name, re } of envSecrets) {
       out = out.replace(re, `[REDACTED:env:${name}]`)
     }

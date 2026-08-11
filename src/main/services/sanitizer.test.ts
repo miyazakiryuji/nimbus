@@ -52,8 +52,7 @@ describe('sanitizer: 環境変数値のマスク', () => {
   const envSan = createSanitizer({
     ANTHROPIC_API_KEY: 'my-secret-value-123',
     DB_PASSWORD: 'hunter2hunter2',
-    SHORT_TOKEN: 'abc', // 8 文字未満 → 対象外
-    HOME: '/Users/someone' // 機密名でない → 対象外
+    SHORT_TOKEN: 'abc' // 8 文字未満 → 対象外
   })
 
   it('機密名の環境変数の値を literal マスクする', () => {
@@ -64,7 +63,21 @@ describe('sanitizer: 環境変数値のマスク', () => {
   })
 
   it('短すぎる値・機密名でない変数はマスクしない', () => {
-    expect(envSan.sanitizeString('abc /Users/someone')).toBe('abc /Users/someone')
+    expect(envSan.sanitizeString('abc 12345')).toBe('abc 12345')
+  })
+})
+
+describe('sanitizer: ホームパスのマスク（診断ログの OS ユーザー名漏洩防止）', () => {
+  const homeSan = createSanitizer({}, '/Users/someone')
+
+  it('ホームディレクトリのパスを ~ に置換する', () => {
+    expect(
+      homeSan.sanitizeString('fatal: /Users/someone/.nimbus/worktrees/x is not a working tree')
+    ).toBe('fatal: ~/.nimbus/worktrees/x is not a working tree')
+  })
+
+  it('ホーム未指定なら何もしない', () => {
+    expect(createSanitizer({}).sanitizeString('/Users/someone/x')).toBe('/Users/someone/x')
   })
 })
 

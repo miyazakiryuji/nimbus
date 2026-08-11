@@ -43,7 +43,14 @@ export class LogBuffer {
     this.entries = []
   }
 
-  /** console と未捕捉例外をこのバッファへも流す（元の出力は維持） */
+  /**
+   * console 出力をこのバッファへも流す（元の出力は維持）。
+   * 注意: process の 'uncaughtException' リスナーは登録しない。
+   * Electron の main プロセスは自前の uncaughtException ハンドラで
+   * クラッシュダイアログを表示するが、追加リスナーがあるとそれが抑止されてしまう
+   * （致命エラーが無警告で握り潰される）ため、ここでは触らない。
+   * アプリ内のエラーは大半が console.error 経由なのでこのパッチで捕捉できる。
+   */
   install(): void {
     for (const level of ['log', 'warn', 'error'] as const) {
       const original = console[level].bind(console)
@@ -52,11 +59,5 @@ export class LogBuffer {
         this.append(level, args)
       }
     }
-    process.on('uncaughtException', (error) => {
-      this.append('error', ['[uncaughtException]', error])
-    })
-    process.on('unhandledRejection', (reason) => {
-      this.append('error', ['[unhandledRejection]', reason])
-    })
   }
 }

@@ -21,6 +21,8 @@ export interface CreateTaskInput {
  */
 export class TaskService extends EventEmitter {
   private tasks = new Map<string, KanbanTask>()
+  /** 起動処理中のタスク（await 中の二重起動を防ぐ同期ガード） */
+  private starting = new Set<string>()
 
   constructor(
     private readonly store: Store,
@@ -62,7 +64,13 @@ export class TaskService extends EventEmitter {
     this.tasks.set(task.taskId, task)
     this.persistAndEmit(task)
     if (input.autoStart) {
-      await this.startNextPending()
+      // 自動開始の失敗はタスク作成自体を失敗させない（worktree は作成済み）。
+      // 待機中のまま残り、ユーザーが手動で開始できる
+      try {
+        await this.startNextPending()
+      } catch (error) {
+        console.error('[nimbus:tasks] auto-start failed; task left pending', error)
+      }
     }
     return task
   }
@@ -70,42 +78,61 @@ export class TaskService extends EventEmitter {
   /** 上限に空きがあれば指定タスク（省略時は最古の待機中）を開始する */
   async startTask(taskId: string): Promise<{ started: boolean; reason?: string }> {
     const task = this.mustGet(taskId)
-    if (task.state !== 'pending') {
+    if (task.state !== 'pending' || this.starting.has(taskId)) {
       return { started: false, reason: '待機中のタスクではありません' }
     }
-    if (this.runningCount() >= this.maxConcurrent()) {
+    // in-flight 分（starting）も枠に数え、上限超過を防ぐ
+    if (this.runningCount() + this.starting.size >= this.maxConcurrent()) {
       return {
         started: false,
         reason: `同時実行上限（${this.maxConcurrent()}）に達しています。空きが出ると自動開始されます`
       }
     }
-    const sessionId = await this.sessions.createSession({
-      cwd: task.worktreePath,
-      firstMessage: task.prompt
-    })
-    task.sessionId = sessionId
-    this.setState(task, 'running')
-    return { started: true }
+    // await より前に同期でマークし、二重起動レースを閉じる
+    this.starting.add(taskId)
+    try {
+      const sessionId = await this.sessions.createSession({
+        cwd: task.worktreePath,
+        firstMessage: task.prompt
+      })
+      task.sessionId = sessionId
+      this.setState(task, 'running')
+      return { started: true }
+    } finally {
+      this.starting.delete(taskId)
+    }
   }
 
-  /** 完了: セッションを閉じ、worktree を破棄（ブランチは残る） */
-  async completeTask(taskId: string): Promise<void> {
+  /**
+   * 完了: 実行中なら中断してから、worktree を破棄（未コミット成果は WIP コミットで保存）。
+   * @returns 保存のために WIP コミットが作られた場合そのハッシュ
+   */
+  async completeTask(taskId: string): Promise<{ wipCommit?: string }> {
     const task = this.mustGet(taskId)
     if (task.sessionId && this.sessions.isActive(task.sessionId)) {
+      // 削除前に CLI を止める（削除された worktree で書き込みを続けさせない）
+      try {
+        await this.sessions.interrupt(task.sessionId)
+      } catch {
+        // interrupt 非対応状態は無視
+      }
       try {
         this.sessions.close(task.sessionId)
       } catch {
         // すでに閉じている場合は無視
       }
     }
+    let wipCommit: string | undefined
     try {
-      await this.worktrees.remove(task.repoCwd, task.worktreePath)
+      const result = await this.worktrees.remove(task.repoCwd, task.worktreePath)
+      wipCommit = result.wipCommit
     } catch (error) {
       // worktree が手動で消されている場合等は続行（状態だけ完了へ）
       console.warn('[nimbus:tasks] worktree remove failed', error)
     }
     this.setState(task, 'done')
     await this.startNextPending()
+    return { wipCommit }
   }
 
   private runningCount(): number {
@@ -135,7 +162,9 @@ export class TaskService extends EventEmitter {
         event.status === 'interrupted'
       ) {
         this.setState(task, 'review')
-        void this.startNextPending()
+        this.startNextPending().catch((error) =>
+          console.error('[nimbus:tasks] startNextPending failed', error)
+        )
       }
     }
   }
