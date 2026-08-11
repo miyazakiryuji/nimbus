@@ -37,3 +37,4 @@
 
 - **B-2/B-3 初回 NG**: HOME 退避方式は Electron からの Keychain 認証が通らず「Not logged in」、かつ userData が HOME に追従せず旧セッション一覧が写り込み。→ 実 HOME＋`NIMBUS_USERDATA` 分離＋`settingSources:[]` 方式に切替（素の SDK プローブで認証・プラグイン 0 を実測確認）。ls 出力の所有者列に OS ユーザー名が写る問題はツール不使用プロンプトで回避し、全項目再検品で OK
 - **手順ミス（復旧済み）**: filter-branch が作業ツリーを書き換え後 HEAD に同期するため、未コミット扱いになった新スクリーンショットがディスクから消失 → 確立済みレシピで再撮影・再検品・コミット。教訓: filter-branch は「全てコミット済み・退避済み」で実行する
+- **C-4 初回 NG（2 件・パッケージ検証が検出）**: (1) 既定ビルドの署名 identity に開発者の実名（Apple Development 証明書名）が埋め込まれ、`codesign -dv` で露出 → `identity: null`（ad-hoc）に変更し、署名が `adhoc` のみになることを実測確認。(2) パッケージ版で `spawn ENOTDIR` — Agent SDK の同梱 CLI バイナリは asar 内から実行不可 → `asarUnpack: node_modules/@anthropic-ai/**` で解決。**「修正のたびにアプリとして固める」運用が初回から本番相当の欠陥を 2 件捕獲**
