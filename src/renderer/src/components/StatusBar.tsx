@@ -13,15 +13,15 @@ function StatusBar(): React.JSX.Element {
   // セッション横断の累計（各セッションの totalCostUsd は累積値なのでセッション毎に最新値を合算）
   const totalCost = Object.values(sessions).reduce((sum, s) => sum + (s.totalCostUsd ?? 0), 0)
   const activeProfile = connection?.profiles.find((p) => p.id === connection.activeProfileId)
+  const label = billingModeLabel(lastApiKeySource ?? undefined, activeProfile?.method)
+  const isSubscription = lastApiKeySource === 'oauth' || lastApiKeySource === 'none'
 
   return (
     <footer className="status-bar">
       <span className="status-bar-billing">
-        {billingModeLabel(lastApiKeySource ?? undefined)}
-        {lastApiKeySource !== null &&
-          lastApiKeySource !== 'oauth' &&
-          ` · 累計 $${totalCost.toFixed(2)}`}
-        {lastApiKeySource === 'oauth' && totalCost > 0 && ` · 推定 $${totalCost.toFixed(2)} 相当`}
+        {label}
+        {lastApiKeySource !== null && !isSubscription && ` · 累計 $${totalCost.toFixed(2)}`}
+        {isSubscription && totalCost > 0 && ` · 推定 $${totalCost.toFixed(2)} 相当`}
       </span>
       <span className="status-bar-right">
         <span className="status-bar-profile">

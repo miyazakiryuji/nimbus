@@ -80,9 +80,26 @@ app.whenReady().then(() => {
     setTimeout(() => {
       void sessionManager.createSession({
         cwd: process.cwd(),
-        firstMessage: 'Reply with exactly: NIMBUS_OK'
+        firstMessage: process.env['NIMBUS_SMOKE_PROMPT'] ?? 'Reply with exactly: NIMBUS_OK'
       })
     }, 3000)
+  }
+
+  // README 用スクリーンショット撮影（開発時のみ・指定時のみ）
+  const screenshotPath = process.env['NIMBUS_SCREENSHOT']
+  if (screenshotPath) {
+    setTimeout(
+      async () => {
+        const window = BrowserWindow.getAllWindows()[0]
+        if (window) {
+          const image = await window.webContents.capturePage()
+          const { writeFileSync } = await import('fs')
+          writeFileSync(screenshotPath, image.toPNG())
+          console.log(`[nimbus] screenshot saved: ${screenshotPath}`)
+        }
+      },
+      Number(process.env['NIMBUS_SCREENSHOT_DELAY_MS'] ?? 20_000)
+    )
   }
 
   app.on('activate', () => {

@@ -76,9 +76,20 @@ export const connectionTestResultSchema = z.object({
 export type ConnectionTestResult = z.infer<typeof connectionTestResultSchema>
 
 /** 課金モード表示（F-7-3。ユーザーが請求形態を誤認しないことが最重要） */
-export function billingModeLabel(apiKeySource: string | undefined): string {
+export function billingModeLabel(
+  apiKeySource: string | undefined,
+  method?: ConnectionMethod
+): string {
+  // クラウドプロバイダ経由は Anthropic 課金ではなくプロバイダ課金
+  if (method === 'bedrock') return 'クラウドプロバイダ課金（AWS Bedrock）'
+  if (method === 'vertex') return 'クラウドプロバイダ課金（Google Cloud）'
+  if (method === 'foundry') return 'クラウドプロバイダ課金（Microsoft Foundry）'
   if (apiKeySource === undefined) return '接続未確認'
-  // §10 検証: apiKeySource は 'user' | 'project' | 'org' | 'temporary' | 'oauth'
-  if (apiKeySource === 'oauth') return 'サブスク利用（利用上限を消費）'
+  // apiKeySource は「API キーの出所」。型定義上の enum は
+  // 'user'|'project'|'org'|'temporary'|'oauth' だが、実測ではキー不使用時に
+  // 'none' が届く（= OAuth サブスクログイン）。E2E スクリーンショットで検出
+  if (apiKeySource === 'oauth' || apiKeySource === 'none') {
+    return 'サブスク利用（利用上限を消費）'
+  }
   return 'API キー利用（従量課金）'
 }
