@@ -41,6 +41,12 @@ export const IPC_CHANNELS = {
   gitUnstageAll: 'nimbus:git:unstage-all',
   gitCommit: 'nimbus:git:commit',
   gitGenerateCommitMessage: 'nimbus:git:generate-commit-message',
+  filesList: 'nimbus:files:list',
+  filesRead: 'nimbus:files:read',
+  filesWrite: 'nimbus:files:write',
+  /** main → renderer へのファイル変更 push（Claude の編集を反映） */
+  filesChanged: 'nimbus:files:changed',
+  uiInitialView: 'nimbus:ui:initial-view',
   taskCreate: 'nimbus:task:create',
   taskStart: 'nimbus:task:start',
   taskComplete: 'nimbus:task:complete',
@@ -126,6 +132,19 @@ export interface GitPathsRequest {
 export interface GitCommitRequest {
   cwd: string
   message: string
+}
+export interface FilesListRequest {
+  root: string
+  path?: string
+}
+export interface FilesReadRequest {
+  root: string
+  path: string
+}
+export interface FilesWriteRequest {
+  root: string
+  path: string
+  content: string
 }
 export interface TaskCreateRequest {
   title: string

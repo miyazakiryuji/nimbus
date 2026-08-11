@@ -442,6 +442,119 @@ body {
   color: var(--nimbus-color-error);
 }
 
+.explorer {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.explorer-empty {
+  align-items: center;
+  justify-content: center;
+  color: var(--nimbus-color-foreground-muted);
+  padding: 2rem;
+}
+
+.explorer-tree {
+  width: 260px;
+  flex-shrink: 0;
+  overflow: auto;
+  border-right: 1px solid var(--nimbus-color-border);
+  background: var(--nimbus-color-background-soft);
+}
+
+.explorer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--nimbus-color-border);
+  font-size: 0.8rem;
+  color: var(--nimbus-color-foreground-muted);
+  position: sticky;
+  top: 0;
+  background: var(--nimbus-color-background-soft);
+}
+
+.tree-list {
+  list-style: none;
+}
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 0.15rem 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--nimbus-color-foreground);
+  font-size: 0.78rem;
+  font-family: var(--nimbus-font-family);
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tree-row:hover {
+  background: var(--nimbus-color-user-bubble);
+}
+
+.tree-row-active {
+  background: var(--nimbus-color-user-bubble);
+  box-shadow: inset 2px 0 0 var(--nimbus-color-accent);
+}
+
+.tree-icon {
+  color: var(--nimbus-color-foreground-muted);
+  width: 0.8rem;
+  flex-shrink: 0;
+}
+
+.tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-size {
+  margin-left: auto;
+  padding-left: 0.5rem;
+  color: var(--nimbus-color-foreground-muted);
+  font-size: 0.65rem;
+}
+
+.explorer-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.explorer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--nimbus-color-border);
+  font-family: var(--nimbus-font-family-mono);
+  font-size: 0.78rem;
+}
+
+.explorer-dirty {
+  color: var(--nimbus-color-accent);
+}
+
+.explorer-editor {
+  flex: 1;
+  min-height: 0;
+}
+
+.explorer-notice {
+  padding: 0.2rem 1rem;
+}
+
 .board {
   flex: 1;
   min-width: 0;

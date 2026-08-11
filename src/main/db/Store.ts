@@ -147,6 +147,13 @@ export class Store {
       })
   }
 
+  listWorkspaces(): string[] {
+    const rows = this.db
+      .prepare('SELECT path FROM workspaces ORDER BY last_used_at DESC')
+      .all() as Array<{ path: string }>
+    return rows.map((r) => r.path)
+  }
+
   listTasks(): KanbanTask[] {
     interface Row {
       task_id: string

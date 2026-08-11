@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { z } from 'zod'
-import { nimbusEventSchema, sessionSummarySchema } from '@shared/events'
 import type { NimbusEvent } from '@shared/events'
 import { TERMINAL_STATUSES, useSessionStore } from '../../stores/sessionStore'
 import { useUiStore } from '../../stores/uiStore'
-
-const sessionListSchema = z.array(sessionSummarySchema)
 
 function EventRow({ event }: { event: NimbusEvent }): React.JSX.Element | null {
   switch (event.kind) {
@@ -49,51 +45,12 @@ function EventRow({ event }: { event: NimbusEvent }): React.JSX.Element | null {
 }
 
 function ChatView(): React.JSX.Element {
-  const { sessions, activeSessionId, hydrated, ingest, hydrate } = useSessionStore()
+  // セッションの購読・再アタッチは App の useSessionSync が全ビュー共通で行う
+  const { sessions, activeSessionId, hydrated } = useSessionStore()
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [uiError, setUiError] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const unsubscribe = window.nimbus.sessions.onEvent((raw) => {
-      // Renderer 側でも受信イベントを検証する（§3 設計原則 2）
-      const parsed = nimbusEventSchema.safeParse(raw)
-      if (!parsed.success) {
-        console.error('[nimbus:renderer] invalid event', parsed.error)
-        return
-      }
-      if (import.meta.env.DEV) {
-        console.log(
-          `[nimbus:renderer] event kind=${parsed.data.kind} session=${parsed.data.sessionId.slice(0, 8)}`
-        )
-      }
-      if (parsed.data.kind === 'session-init') {
-        // 課金モード表示（F-7-3）用に直近の認証ソースを記録
-        useUiStore.getState().setLastApiKeySource(parsed.data.apiKeySource)
-      }
-      ingest(parsed.data)
-    })
-
-    // リロード/ウィンドウ再作成時に main の既存セッションへ再アタッチする（レビュー指摘 #3）
-    void window.nimbus.sessions
-      .list()
-      .then((raw) => {
-        const parsed = sessionListSchema.safeParse(raw)
-        if (parsed.success) {
-          hydrate(parsed.data)
-        } else {
-          console.error('[nimbus:renderer] invalid session list', parsed.error)
-          hydrate([])
-        }
-      })
-      .catch((error) => {
-        console.error('[nimbus:renderer] session list failed', error)
-        hydrate([])
-      })
-
-    return unsubscribe
-  }, [ingest, hydrate])
 
   const active = activeSessionId ? sessions[activeSessionId] : undefined
   const activeIsTerminal = active ? TERMINAL_STATUSES.has(active.status) : false

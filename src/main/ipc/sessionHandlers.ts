@@ -14,6 +14,7 @@ import {
 } from '@shared/ipc-schemas'
 import type { SessionManager } from '../services/SessionManager'
 import type { Store } from '../db/Store'
+import type { WorkspaceRegistry } from '../services/WorkspaceRegistry'
 import { findClaudeMdChain } from '../services/claudeMd'
 import { broadcastToWindows } from './broadcast'
 
@@ -26,9 +27,15 @@ const sessionEventsResponseSchema = z.array(nimbusEventSchema)
  * §3 設計原則 2: リクエストは受信時に parse、レスポンス・push イベントも送出前に parse する。
  * イベントは全ウィンドウへブロードキャストする（多重ウィンドウ前提）。
  */
-export function registerSessionIpc(manager: SessionManager, store: Store): void {
+export function registerSessionIpc(
+  manager: SessionManager,
+  store: Store,
+  registry: WorkspaceRegistry
+): void {
   ipcMain.handle(IPC_CHANNELS.sessionCreate, async (_event, raw: unknown) => {
     const req = sessionCreateRequestSchema.parse(raw)
+    // renderer 由来の cwd は「開いたワークスペース」に限定する（§6 多層防御）
+    if (req.cwd) registry.assertAllowed(req.cwd)
     const sessionId = await manager.createSession(req)
     if (req.cwd) store.touchWorkspace(req.cwd)
     return { sessionId }

@@ -1,8 +1,10 @@
 import { join } from 'path'
 import { homedir } from 'os'
-import { app, BrowserWindow, safeStorage } from 'electron'
+import { app, BrowserWindow, ipcMain, safeStorage } from 'electron'
 import { electronApp, is, optimizer } from '@electron-toolkit/utils'
 import { themeSchema } from '@shared/theme'
+import { filesChangedSchema } from '@shared/files'
+import { IPC_CHANNELS } from '@shared/ipc-channels'
 import { createMainWindow } from './window'
 import { SessionManager } from './services/SessionManager'
 import { createSanitizer } from './services/sanitizer'
@@ -17,7 +19,12 @@ import { GitService } from './services/GitService'
 import { LogBuffer } from './services/LogBuffer'
 import { TaskService } from './services/TaskService'
 import { WorktreeManager } from './services/WorktreeManager'
+import { WorkspaceRegistry } from './services/WorkspaceRegistry'
+import { FileService } from './services/FileService'
+import { FileWatcher } from './services/FileWatcher'
 import { registerTaskIpc } from './ipc/taskHandlers'
+import { registerFileIpc } from './ipc/fileHandlers'
+import { broadcastToWindows } from './ipc/broadcast'
 import { registerSessionIpc } from './ipc/sessionHandlers'
 import { registerDiagIpc } from './ipc/diagHandlers'
 import { registerConnectionIpc } from './ipc/connectionHandlers'
@@ -42,6 +49,8 @@ let vault: CredentialVault
 let connection: ConnectionService
 let sessionManager: SessionManager
 let store: Store | undefined
+let registry: WorkspaceRegistry
+let fileWatcher: FileWatcher | undefined
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('dev.idris.nimbus')
@@ -83,10 +92,30 @@ app.whenReady().then(() => {
     }
   })
 
-  registerSessionIpc(sessionManager, store)
+  // §6 多層防御: renderer から渡るルートは「ユーザーが開いた場所」だけを許可する。
+  // 起動時に過去のワークスペース・セッション cwd・タスク worktree を復元登録し、
+  // 以後は session-init の実測 cwd とワークスペース選択で追加する。
+  registry = new WorkspaceRegistry()
+  for (const path of store.listWorkspaces()) registry.register(path)
+  for (const session of store.listSessions()) registry.register(session.cwd)
+  for (const task of store.listTasks()) {
+    registry.register(task.repoCwd)
+    registry.register(task.worktreePath)
+  }
+  const registryRef = registry
+  sessionManager.on('event', (event) => {
+    if (event.kind === 'session-init') registryRef.register(event.cwd)
+  })
+
+  fileWatcher = new FileWatcher((root, paths) => {
+    broadcastToWindows(IPC_CHANNELS.filesChanged, filesChangedSchema.parse({ root, paths }))
+  })
+
+  registerSessionIpc(sessionManager, store, registry)
   registerConnectionIpc(config, vault, connection)
-  registerReviewIpc(new GitService(), store, () => connection.buildSessionOptions())
+  registerReviewIpc(new GitService(), store, registry, () => connection.buildSessionOptions())
   registerDiagIpc(logBuffer, config, connection)
+  registerFileIpc(new FileService(), registry, fileWatcher)
   const taskService = new TaskService(
     store,
     new WorktreeManager(),
@@ -94,7 +123,7 @@ app.whenReady().then(() => {
     broker,
     () => config.loadSettings().maxConcurrentSessions
   )
-  registerTaskIpc(taskService)
+  registerTaskIpc(taskService, registry)
   const themeService = new ThemeService(
     {
       'nimbus-dark': themeSchema.parse(nimbusDark),
@@ -104,6 +133,11 @@ app.whenReady().then(() => {
     config.userThemesDir
   )
   registerThemeIpc(config, themeService)
+  // 開発・撮影用の初期表示指定（通常起動では null）
+  ipcMain.handle(IPC_CHANNELS.uiInitialView, () => ({
+    view: process.env['NIMBUS_INITIAL_VIEW'] ?? null,
+    file: process.env['NIMBUS_INITIAL_FILE'] ?? null
+  }))
   createMainWindow()
 
   // E2E 起動確認用スモーク: NIMBUS_SMOKE=1 で 1 往復を自動実行する（docs/testing 参照）
@@ -160,6 +194,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   // 全セッションの入力を閉じ、CLI サブプロセスを解放する
   sessionManager?.closeAll()
+  fileWatcher?.closeAll()
 })
 
 app.on('quit', () => {

@@ -8,6 +8,7 @@ import {
   type GitStatusResult
 } from '@shared/review'
 import { languageForPath, monaco } from './monacoSetup'
+import { monacoThemeFor } from './monacoTheme'
 import { TERMINAL_STATUSES, useSessionStore } from '../../stores/sessionStore'
 import { useUiStore } from '../../stores/uiStore'
 
@@ -76,12 +77,11 @@ function ReviewView(): React.JSX.Element {
   // Monaco diff エディタの生成・破棄
   useEffect(() => {
     if (!containerRef.current) return
-    const isDark = (themeState?.cssVars['--nimbus-color-background'] ?? '#12161f') < '#888888'
     const editor = monaco.editor.createDiffEditor(containerRef.current, {
       readOnly: true,
       renderSideBySide: true,
       automaticLayout: true,
-      theme: isDark ? 'vs-dark' : 'vs',
+      theme: monacoThemeFor(themeState),
       minimap: { enabled: false },
       fontSize: 12
     })

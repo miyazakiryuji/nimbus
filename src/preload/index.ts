@@ -13,6 +13,9 @@ import {
   type GitRestoreRequest,
   type ConnectionSaveProfileRequest,
   type ConnectionSetActiveRequest,
+  type FilesListRequest,
+  type FilesReadRequest,
+  type FilesWriteRequest,
   type SessionCloseRequest,
   type SessionCreateRequest,
   type SessionCreateResponse,
@@ -110,6 +113,24 @@ const nimbus = {
       ipcRenderer.invoke(IPC_CHANNELS.gitCommit, req),
     generateCommitMessage: (req: GitCwdRequest): Promise<{ message: string }> =>
       ipcRenderer.invoke(IPC_CHANNELS.gitGenerateCommitMessage, req)
+  },
+  files: {
+    list: (req: FilesListRequest): Promise<unknown> =>
+      ipcRenderer.invoke(IPC_CHANNELS.filesList, req),
+    read: (req: FilesReadRequest): Promise<unknown> =>
+      ipcRenderer.invoke(IPC_CHANNELS.filesRead, req),
+    write: (req: FilesWriteRequest): Promise<{ size: number }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.filesWrite, req),
+    onChanged: (callback: (payload: unknown) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, payload: unknown): void => callback(payload)
+      ipcRenderer.on(IPC_CHANNELS.filesChanged, listener)
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.filesChanged, listener)
+      }
+    }
+  },
+  ui: {
+    initial: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.uiInitialView)
   },
   tasks: {
     list: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.taskList),

@@ -9,6 +9,10 @@
 
 ![Nimbus cockpit](docs/images/cockpit.png)
 
+_Explorer + editor — browse and edit files; Claude's edits reload automatically:_
+
+![Explorer and editor](docs/images/explorer.png)
+
 _Approval inbox — tool calls held for review before execution:_
 
 ![Approval inbox](docs/images/inbox.png)
@@ -33,12 +37,16 @@ _(EN)_ **Nimbus** is Latin for "cloud" — in meteorology, a rain cloud (as in _
 | Feature                                                                                                                                                                                   | Status |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | **Session engine** — interactive Claude Code sessions via the Agent SDK: streaming, interrupt, resume, multiple concurrent sessions on the same project                                   | ✅     |
+| **Explorer + editor** — lazy file tree, Monaco editing with ⌘S save, and auto-reload when Claude rewrites the file you are looking at                                                     | ✅     |
+| **Task board** — task = git worktree = session (1:1:1), 5-column kanban, concurrency cap with auto-start, cross-session event feed                                                        | ✅     |
+| **Git tree (SCM)** — staged/unstaged sections, stage/unstage, commit, and ✨ AI-generated commit messages from the diff                                                                   | ✅     |
+| **Diagnostics** — environment info plus a sanitized main-process log you can paste into an issue as-is                                                                                    | ✅     |
 | **Approval inbox** — tool calls held before execution in one cross-session queue; approve/deny individually or in bulk, auto-approve rules per session/workspace, OS notifications        | ✅     |
 | **Context visualization** — model, tools, MCP servers, plugins/skills, applied CLAUDE.md hierarchy, cumulative cost + token graphs                                                        | ✅     |
 | **Connection settings (BYO Claude Code)** — ride your existing `claude` login, or use an API key / Bedrock / Vertex / Foundry via profiles; billing mode always visible in the status bar | ✅     |
 | **Themes** — VS Code-style workbench color keys, 3 built-in themes, `~/.nimbus/themes/*.json` hot reload, OS dark-mode follow, font settings                                              | ✅     |
 | **Session persistence** — every event stored locally in SQLite (after secret sanitization), sessions searchable and resumable                                                             | ✅     |
-| GUI diff review (Phase 2) / worktree kanban (Phase 3) / config lab (Phase 4)                                                                                                              | 🔜     |
+| Config / skill lab, skill search, in-app help chat (Phase 4)                                                                                                                              | 🔜     |
 
 ## Download / ダウンロード
 
@@ -110,6 +118,7 @@ The status bar always shows which billing mode is active（ステータスバー
 ## Privacy & security
 
 - All data stays local. **No telemetry, no external transmission.**
+- File reads/writes and git operations are restricted to directories you explicitly opened (workspace allowlist), and every path is validated against traversal **and symlink escapes** before touching disk.
 - Everything written to the local SQLite log passes a **secret sanitizer** first (API-key patterns, tokens, sensitive env values) so pasting logs into an issue doesn't leak credentials.
 - Renderer is fully sandboxed (`sandbox: true`, `contextIsolation: true`, `nodeIntegration: false`); only a typed whitelist API is exposed.
 

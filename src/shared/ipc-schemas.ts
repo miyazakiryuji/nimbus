@@ -82,6 +82,22 @@ export const gitCommitRequestSchema = z.object({
   message: z.string().min(1).max(5000)
 })
 
+export const filesListRequestSchema = z.object({
+  root: z.string().min(1),
+  path: z.string().default('')
+})
+
+export const filesReadRequestSchema = z.object({
+  root: z.string().min(1),
+  path: z.string().min(1)
+})
+
+export const filesWriteRequestSchema = z.object({
+  root: z.string().min(1),
+  path: z.string().min(1),
+  content: z.string()
+})
+
 export const taskCreateRequestSchema = z.object({
   title: z.string().min(1).max(100),
   prompt: z.string().min(1),
