@@ -84,20 +84,22 @@ app.whenReady().then(() => {
   // NIMBUS_SMOKE_SAFE=1 は撮影用: コアツールのみ・MCP/プラグイン読み込みなし（個人情報の写り込み防止）
   if (process.env['NIMBUS_SMOKE'] === '1') {
     setTimeout(() => {
-      void sessionManager.createSession({
-        cwd: process.env['NIMBUS_SMOKE_CWD'] ?? process.cwd(),
-        firstMessage: process.env['NIMBUS_SMOKE_PROMPT'] ?? 'Reply with exactly: NIMBUS_OK',
-        ...(process.env['NIMBUS_SMOKE_SAFE'] === '1'
-          ? {
-              extraOptions: {
-                settingSources: [],
-                tools: { type: 'preset' as const, preset: 'claude_code' as const },
-                mcpServers: {},
-                strictMcpConfig: true
+      sessionManager
+        .createSession({
+          cwd: process.env['NIMBUS_SMOKE_CWD'] ?? process.cwd(),
+          firstMessage: process.env['NIMBUS_SMOKE_PROMPT'] ?? 'Reply with exactly: NIMBUS_OK',
+          ...(process.env['NIMBUS_SMOKE_SAFE'] === '1'
+            ? {
+                extraOptions: {
+                  settingSources: [],
+                  tools: { type: 'preset' as const, preset: 'claude_code' as const },
+                  mcpServers: {},
+                  strictMcpConfig: true
+                }
               }
-            }
-          : {})
-      })
+            : {})
+        })
+        .catch((error) => console.error('[nimbus:main] smoke session failed', error))
     }, 3000)
   }
 
