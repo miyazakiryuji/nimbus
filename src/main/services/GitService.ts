@@ -83,6 +83,47 @@ export class GitService {
     }))
   }
 
+  /** ステージ（git add）。paths は検証済み相対パスのみ */
+  async stage(cwd: string, paths: string[]): Promise<void> {
+    for (const p of paths) assertInsideRepo(cwd, p)
+    await simpleGit(cwd).add(paths)
+  }
+
+  async unstage(cwd: string, paths: string[]): Promise<void> {
+    for (const p of paths) assertInsideRepo(cwd, p)
+    await simpleGit(cwd).raw(['restore', '--staged', '--', ...paths])
+  }
+
+  async stageAll(cwd: string): Promise<void> {
+    await simpleGit(cwd).add(['-A'])
+  }
+
+  async unstageAll(cwd: string): Promise<void> {
+    await simpleGit(cwd).raw(['restore', '--staged', '.'])
+  }
+
+  /** ステージ済みの内容をコミットする */
+  async commit(cwd: string, message: string): Promise<{ hash: string }> {
+    const result = await simpleGit(cwd).commit(message)
+    if (!result.commit) {
+      throw new Error('ステージ済みの変更がありません')
+    }
+    return { hash: result.commit }
+  }
+
+  /** コミットメッセージ生成用の diff 収集（staged 優先） */
+  async collectDiff(
+    cwd: string
+  ): Promise<{ stagedDiff: string; unstagedDiff: string; untracked: string[] }> {
+    const git = simpleGit(cwd)
+    const [stagedDiff, unstagedDiff, status] = await Promise.all([
+      git.diff(['--cached']),
+      git.diff(),
+      git.status()
+    ])
+    return { stagedDiff, unstagedDiff, untracked: status.not_added }
+  }
+
   /** ファイル単位の巻き戻し（HEAD の内容へ）。未追跡ファイルは対象外 */
   async revertFile(cwd: string, relPath: string): Promise<void> {
     assertInsideRepo(cwd, relPath)

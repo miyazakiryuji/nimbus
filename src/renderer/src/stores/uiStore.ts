@@ -3,8 +3,8 @@ import type { ConnectionState } from '@shared/profiles'
 import type { ThemeState } from '@shared/theme'
 
 interface UiStoreState {
-  view: 'cockpit' | 'review' | 'settings'
-  setView: (view: 'cockpit' | 'review' | 'settings') => void
+  view: 'cockpit' | 'review' | 'diagnostics' | 'settings'
+  setView: (view: 'cockpit' | 'review' | 'diagnostics' | 'settings') => void
   /** 開いているワークスペース（新規セッションの cwd・レビュー対象） */
   workspace: string | null
   setWorkspace: (path: string | null) => void

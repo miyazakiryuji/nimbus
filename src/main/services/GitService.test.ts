@@ -103,4 +103,42 @@ describe('GitService（F-4 差分レビュー、実 git repo 統合）', () => {
   it('restoreCheckpoint: 不正なハッシュを拒否する', async () => {
     await expect(service.restoreCheckpoint(dir, 'main; rm -rf /')).rejects.toThrow('Invalid')
   })
+
+  it('SCM: stage → status 反映 → commit、unstage で戻る', async () => {
+    writeFileSync(join(dir, 'a.txt'), 'staged change\n')
+    writeFileSync(join(dir, 'b.txt'), 'untracked\n')
+    await service.stage(dir, ['a.txt'])
+    let status = await service.status(dir)
+    expect(status.files.find((f) => f.path === 'a.txt')?.index).toBe('M')
+    expect(status.files.find((f) => f.path === 'b.txt')?.workingDir).toBe('?')
+
+    await service.unstage(dir, ['a.txt'])
+    status = await service.status(dir)
+    expect(status.files.find((f) => f.path === 'a.txt')?.index).toBe('')
+
+    await service.stageAll(dir)
+    const { hash } = await service.commit(dir, 'feat: SCM テストコミット')
+    expect(hash).toBeTruthy()
+    status = await service.status(dir)
+    expect(status.files).toHaveLength(0)
+  })
+
+  it('SCM: ステージなしの commit はエラー', async () => {
+    await expect(service.commit(dir, 'empty')).rejects.toThrow('ステージ済みの変更がありません')
+  })
+
+  it('collectDiff: staged / unstaged / untracked を分離して返す', async () => {
+    writeFileSync(join(dir, 'a.txt'), 'staged\n')
+    await service.stage(dir, ['a.txt'])
+    writeFileSync(join(dir, 'a.txt'), 'staged then more\n')
+    writeFileSync(join(dir, 'c.txt'), 'untracked\n')
+    const diff = await service.collectDiff(dir)
+    expect(diff.stagedDiff).toContain('staged')
+    expect(diff.unstagedDiff).toContain('more')
+    expect(diff.untracked).toEqual(['c.txt'])
+  })
+
+  it('SCM: stage のパス検証（脱出拒否）', async () => {
+    await expect(service.stage(dir, ['../evil.txt'])).rejects.toThrow('escapes')
+  })
 })

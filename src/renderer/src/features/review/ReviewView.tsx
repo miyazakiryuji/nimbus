@@ -39,6 +39,8 @@ function ReviewView(): React.JSX.Element {
   const [history, setHistory] = useState<GitCheckpoint[]>([])
   const [comment, setComment] = useState('')
   const [checkpointLabel, setCheckpointLabel] = useState('')
+  const [commitMessage, setCommitMessage] = useState('')
+  const [generating, setGenerating] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<monaco.editor.IStandaloneDiffEditor | null>(null)
@@ -160,6 +162,63 @@ function ReviewView(): React.JSX.Element {
     [targetCwd, refresh]
   )
 
+  // VS Code 風 SCM: ステージ済み（index 側にコードあり）と変更（working tree 側）に分ける
+  const stagedFiles = (status?.files ?? []).filter((f) => f.index !== '' && f.index !== '?')
+  const unstagedFiles = (status?.files ?? []).filter((f) => f.workingDir !== '' || f.index === '?')
+
+  const scm = useCallback(
+    async (
+      action: 'stage' | 'unstage' | 'stageAll' | 'unstageAll',
+      path?: string
+    ): Promise<void> => {
+      if (!targetCwd) return
+      try {
+        if (action === 'stage' && path) {
+          await window.nimbus.git.stage({ cwd: targetCwd, paths: [path] })
+        } else if (action === 'unstage' && path) {
+          await window.nimbus.git.unstage({ cwd: targetCwd, paths: [path] })
+        } else if (action === 'stageAll') {
+          await window.nimbus.git.stageAll({ cwd: targetCwd })
+        } else if (action === 'unstageAll') {
+          await window.nimbus.git.unstageAll({ cwd: targetCwd })
+        }
+        await refresh()
+      } catch (error) {
+        setMessage(`操作に失敗: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    },
+    [targetCwd, refresh]
+  )
+
+  const handleGenerateMessage = useCallback(async (): Promise<void> => {
+    if (!targetCwd) return
+    setGenerating(true)
+    setMessage(null)
+    try {
+      const result = await window.nimbus.git.generateCommitMessage({ cwd: targetCwd })
+      setCommitMessage(result.message)
+    } catch (error) {
+      setMessage(`生成に失敗: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setGenerating(false)
+    }
+  }, [targetCwd])
+
+  const handleCommit = useCallback(async (): Promise<void> => {
+    if (!targetCwd || !commitMessage.trim()) return
+    try {
+      const { hash } = await window.nimbus.git.commit({
+        cwd: targetCwd,
+        message: commitMessage.trim()
+      })
+      setCommitMessage('')
+      setMessage(`コミットしました: ${hash.slice(0, 7)}`)
+      await refresh()
+    } catch (error) {
+      setMessage(`コミットに失敗: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }, [targetCwd, commitMessage, refresh])
+
   const activeSession = activeSessionId ? sessions[activeSessionId] : undefined
   const canSendComment =
     activeSession !== undefined && !TERMINAL_STATUSES.has(activeSession.status) && comment.trim()
@@ -200,9 +259,18 @@ function ReviewView(): React.JSX.Element {
           </button>
         </div>
         {status && !status.isRepo && <p className="settings-muted">Git リポジトリではありません</p>}
+
+        <div className="review-side-header">
+          <span>ステージ済み ({stagedFiles.length})</span>
+          {stagedFiles.length > 0 && (
+            <button className="btn btn-small" onClick={() => void scm('unstageAll')}>
+              全て解除
+            </button>
+          )}
+        </div>
         <ul className="review-files">
-          {(status?.files ?? []).map((f) => (
-            <li key={f.path}>
+          {stagedFiles.map((f) => (
+            <li key={`s-${f.path}`} className="review-file-row">
               <button
                 className={`review-file ${selectedFile === f.path ? 'review-file-active' : ''}`}
                 onClick={() => void openDiff(f.path)}
@@ -210,12 +278,75 @@ function ReviewView(): React.JSX.Element {
                 <span className="review-file-status">{fileStatusLabel(f.index, f.workingDir)}</span>
                 <span className="review-file-path">{f.path}</span>
               </button>
+              <button
+                className="btn btn-icon"
+                title="ステージ解除"
+                onClick={() => void scm('unstage', f.path)}
+              >
+                −
+              </button>
             </li>
           ))}
-          {status?.isRepo && (status?.files.length ?? 0) === 0 && (
+          {stagedFiles.length === 0 && <li className="settings-muted">なし</li>}
+        </ul>
+
+        <div className="review-side-header">
+          <span>変更 ({unstagedFiles.length})</span>
+          {unstagedFiles.length > 0 && (
+            <button className="btn btn-small" onClick={() => void scm('stageAll')}>
+              全てステージ
+            </button>
+          )}
+        </div>
+        <ul className="review-files">
+          {unstagedFiles.map((f) => (
+            <li key={`u-${f.path}`} className="review-file-row">
+              <button
+                className={`review-file ${selectedFile === f.path ? 'review-file-active' : ''}`}
+                onClick={() => void openDiff(f.path)}
+              >
+                <span className="review-file-status">{fileStatusLabel(f.index, f.workingDir)}</span>
+                <span className="review-file-path">{f.path}</span>
+              </button>
+              <button
+                className="btn btn-icon"
+                title="ステージ"
+                onClick={() => void scm('stage', f.path)}
+              >
+                ＋
+              </button>
+            </li>
+          ))}
+          {status?.isRepo && unstagedFiles.length === 0 && (
             <li className="settings-muted">変更はありません</li>
           )}
         </ul>
+
+        <div className="review-commit">
+          <textarea
+            rows={3}
+            value={commitMessage}
+            placeholder="コミットメッセージ"
+            onChange={(e) => setCommitMessage(e.target.value)}
+          />
+          <div className="review-commit-actions">
+            <button
+              className="btn btn-small"
+              disabled={generating}
+              onClick={() => void handleGenerateMessage()}
+              title="変更内容から Claude がコミットメッセージを生成します"
+            >
+              {generating ? '生成中…' : '✨ 自動生成'}
+            </button>
+            <button
+              className="btn btn-small btn-primary"
+              disabled={stagedFiles.length === 0 || !commitMessage.trim()}
+              onClick={() => void handleCommit()}
+            >
+              コミット
+            </button>
+          </div>
+        </div>
         <div className="review-side-header">
           <span>チェックポイント</span>
         </div>

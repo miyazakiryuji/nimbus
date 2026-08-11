@@ -13,7 +13,9 @@ import { resolveBundledClaudeBinary } from './services/bundledBinary'
 import { ThemeService } from './services/ThemeService'
 import { Store } from './db/Store'
 import { GitService } from './services/GitService'
+import { LogBuffer } from './services/LogBuffer'
 import { registerSessionIpc } from './ipc/sessionHandlers'
+import { registerDiagIpc } from './ipc/diagHandlers'
 import { registerConnectionIpc } from './ipc/connectionHandlers'
 import { registerApprovalIpc } from './ipc/approvalHandlers'
 import { registerReviewIpc } from './ipc/reviewHandlers'
@@ -29,6 +31,9 @@ if (process.env['NIMBUS_USERDATA']) {
 
 const sanitizer = createSanitizer(process.env)
 const config = new ConfigService()
+// 診断ビュー用: 以後の console 出力・未捕捉例外をサニタイズ付きで記録（§6-2/6-3）
+const logBuffer = new LogBuffer(sanitizer.sanitizeString)
+logBuffer.install()
 let vault: CredentialVault
 let connection: ConnectionService
 let sessionManager: SessionManager
@@ -76,7 +81,8 @@ app.whenReady().then(() => {
 
   registerSessionIpc(sessionManager, store)
   registerConnectionIpc(config, vault, connection)
-  registerReviewIpc(new GitService(), store)
+  registerReviewIpc(new GitService(), store, () => connection.buildSessionOptions())
+  registerDiagIpc(logBuffer, config, connection)
   const themeService = new ThemeService(
     {
       'nimbus-dark': themeSchema.parse(nimbusDark),

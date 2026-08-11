@@ -6,8 +6,10 @@ import {
   type ApprovalsDenyRequest,
   type ConnectionProfileIdRequest,
   type GitCheckpointRequest,
+  type GitCommitRequest,
   type GitCwdRequest,
   type GitFileRequest,
+  type GitPathsRequest,
   type GitRestoreRequest,
   type ConnectionSaveProfileRequest,
   type ConnectionSetActiveRequest,
@@ -93,7 +95,24 @@ const nimbus = {
     revertFile: (req: GitFileRequest): Promise<{ ok: boolean }> =>
       ipcRenderer.invoke(IPC_CHANNELS.gitRevertFile, req),
     restore: (req: GitRestoreRequest): Promise<{ ok: boolean }> =>
-      ipcRenderer.invoke(IPC_CHANNELS.gitRestore, req)
+      ipcRenderer.invoke(IPC_CHANNELS.gitRestore, req),
+    stage: (req: GitPathsRequest): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitStage, req),
+    unstage: (req: GitPathsRequest): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitUnstage, req),
+    stageAll: (req: GitCwdRequest): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitStageAll, req),
+    unstageAll: (req: GitCwdRequest): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitUnstageAll, req),
+    commit: (req: GitCommitRequest): Promise<{ hash: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitCommit, req),
+    generateCommitMessage: (req: GitCwdRequest): Promise<{ message: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitGenerateCommitMessage, req)
+  },
+  diag: {
+    info: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.diagInfo),
+    logs: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.diagLogs),
+    clear: (): Promise<{ ok: boolean }> => ipcRenderer.invoke(IPC_CHANNELS.diagClear)
   },
   theme: {
     getState: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.themeState),

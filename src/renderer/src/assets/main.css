@@ -350,6 +350,90 @@ body {
   padding: 0.2rem 1rem;
 }
 
+.review-file-row {
+  display: flex;
+  align-items: center;
+}
+
+.review-file-row .review-file {
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  color: var(--nimbus-color-foreground-muted);
+  cursor: pointer;
+  padding: 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.btn-icon:hover {
+  color: var(--nimbus-color-accent);
+}
+
+.review-commit {
+  padding: 0.6rem 0.8rem;
+  border-top: 1px solid var(--nimbus-color-border);
+  border-bottom: 1px solid var(--nimbus-color-border);
+}
+
+.review-commit textarea {
+  width: 100%;
+  resize: none;
+  background: var(--nimbus-color-background);
+  color: var(--nimbus-color-foreground);
+  border: 1px solid var(--nimbus-color-border);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  font-family: var(--nimbus-font-family);
+  margin-bottom: 0.4rem;
+}
+
+.review-commit-actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.diag-kv dd {
+  word-break: break-all;
+}
+
+.diag-logs {
+  background: var(--nimbus-color-background);
+  border: 1px solid var(--nimbus-color-border);
+  border-radius: 8px;
+  padding: 0.6rem;
+  max-height: 50vh;
+  overflow-y: auto;
+  font-family: var(--nimbus-font-family-mono);
+  font-size: 0.72rem;
+}
+
+.diag-log {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.1rem 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.diag-log-time {
+  color: var(--nimbus-color-foreground-muted);
+  flex-shrink: 0;
+}
+
+.diag-log-warn .diag-log-message {
+  color: var(--nimbus-color-accent);
+}
+
+.diag-log-error .diag-log-message {
+  color: var(--nimbus-color-error);
+}
+
 .settings-row .settings-field {
   flex: 1;
 }

@@ -72,6 +72,16 @@ export const gitRestoreRequestSchema = z.object({
   hash: z.string().regex(/^[0-9a-f]{7,40}$/i)
 })
 
+export const gitPathsRequestSchema = z.object({
+  cwd: z.string().min(1),
+  paths: z.array(z.string().min(1)).min(1)
+})
+
+export const gitCommitRequestSchema = z.object({
+  cwd: z.string().min(1),
+  message: z.string().min(1).max(5000)
+})
+
 export const claudeMdEntrySchema = z.object({
   path: z.string(),
   scope: z.enum(['user', 'project', 'parent'])

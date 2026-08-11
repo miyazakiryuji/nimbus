@@ -35,6 +35,15 @@ export const IPC_CHANNELS = {
   gitHistory: 'nimbus:git:history',
   gitRevertFile: 'nimbus:git:revert-file',
   gitRestore: 'nimbus:git:restore',
+  gitStage: 'nimbus:git:stage',
+  gitUnstage: 'nimbus:git:unstage',
+  gitStageAll: 'nimbus:git:stage-all',
+  gitUnstageAll: 'nimbus:git:unstage-all',
+  gitCommit: 'nimbus:git:commit',
+  gitGenerateCommitMessage: 'nimbus:git:generate-commit-message',
+  diagInfo: 'nimbus:diag:info',
+  diagLogs: 'nimbus:diag:logs',
+  diagClear: 'nimbus:diag:clear',
   themeState: 'nimbus:theme:state',
   themeSetSelected: 'nimbus:theme:set-selected',
   settingsSaveFont: 'nimbus:settings:save-font',
@@ -103,6 +112,14 @@ export interface GitCheckpointRequest {
 export interface GitRestoreRequest {
   cwd: string
   hash: string
+}
+export interface GitPathsRequest {
+  cwd: string
+  paths: string[]
+}
+export interface GitCommitRequest {
+  cwd: string
+  message: string
 }
 export interface SettingsSaveFontRequest {
   font: { fontFamily?: string; fontSize?: number; lineHeight?: number }

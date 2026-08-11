@@ -4,15 +4,23 @@ import { IPC_CHANNELS } from '@shared/ipc-channels'
 import { gitCheckpointSchema, gitFileDiffSchema, gitStatusResultSchema } from '@shared/review'
 import {
   gitCheckpointRequestSchema,
+  gitCommitRequestSchema,
   gitCwdRequestSchema,
   gitFileRequestSchema,
+  gitPathsRequestSchema,
   gitRestoreRequestSchema
 } from '@shared/ipc-schemas'
+import type { Options } from '@anthropic-ai/claude-agent-sdk'
 import type { GitService } from '../services/GitService'
 import type { Store } from '../db/Store'
+import { generateCommitMessage } from '../services/commitMessage'
 
-/** F-4 差分レビュー＋ワークスペース選択の IPC */
-export function registerReviewIpc(git: GitService, store: Store): void {
+/** F-4 差分レビュー＋SCM（Git ツリー）＋ワークスペース選択の IPC */
+export function registerReviewIpc(
+  git: GitService,
+  store: Store,
+  optionsProvider?: () => Promise<Partial<Options>>
+): void {
   ipcMain.handle(IPC_CHANNELS.workspaceOpen, async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openDirectory', 'createDirectory'],
@@ -54,5 +62,40 @@ export function registerReviewIpc(git: GitService, store: Store): void {
     const req = gitRestoreRequestSchema.parse(raw)
     await git.restoreCheckpoint(req.cwd, req.hash)
     return { ok: true }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.gitStage, async (_event, raw: unknown) => {
+    const req = gitPathsRequestSchema.parse(raw)
+    await git.stage(req.cwd, req.paths)
+    return { ok: true }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.gitUnstage, async (_event, raw: unknown) => {
+    const req = gitPathsRequestSchema.parse(raw)
+    await git.unstage(req.cwd, req.paths)
+    return { ok: true }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.gitStageAll, async (_event, raw: unknown) => {
+    const req = gitCwdRequestSchema.parse(raw)
+    await git.stageAll(req.cwd)
+    return { ok: true }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.gitUnstageAll, async (_event, raw: unknown) => {
+    const req = gitCwdRequestSchema.parse(raw)
+    await git.unstageAll(req.cwd)
+    return { ok: true }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.gitCommit, async (_event, raw: unknown) => {
+    const req = gitCommitRequestSchema.parse(raw)
+    return git.commit(req.cwd, req.message)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.gitGenerateCommitMessage, async (_event, raw: unknown) => {
+    const req = gitCwdRequestSchema.parse(raw)
+    const message = await generateCommitMessage(req.cwd, git, optionsProvider)
+    return { message }
   })
 }

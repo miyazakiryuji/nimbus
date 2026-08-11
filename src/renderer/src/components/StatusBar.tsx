@@ -54,6 +54,12 @@ function StatusBar(): React.JSX.Element {
           レビュー
         </button>
         <button
+          className={`btn btn-small ${view === 'diagnostics' ? 'btn-primary' : ''}`}
+          onClick={() => setView('diagnostics')}
+        >
+          診断
+        </button>
+        <button
           className={`btn btn-small ${view === 'settings' ? 'btn-primary' : ''}`}
           onClick={() => setView('settings')}
         >

@@ -2,6 +2,7 @@ import ChatView from './features/cockpit/ChatView'
 import SessionsPanel from './features/cockpit/SessionsPanel'
 import ContextPanel from './features/context/ContextPanel'
 import InboxBanner from './features/inbox/InboxBanner'
+import DiagnosticsView from './features/diagnostics/DiagnosticsView'
 import ReviewView from './features/review/ReviewView'
 import SettingsView from './features/settings/SettingsView'
 import StatusBar from './components/StatusBar'
@@ -23,6 +24,7 @@ function App(): React.JSX.Element {
           </div>
         )}
         {view === 'review' && <ReviewView />}
+        {view === 'diagnostics' && <DiagnosticsView />}
         {view === 'settings' && <SettingsView />}
       </div>
       <StatusBar />
