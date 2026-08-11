@@ -41,6 +41,12 @@ export const IPC_CHANNELS = {
   gitUnstageAll: 'nimbus:git:unstage-all',
   gitCommit: 'nimbus:git:commit',
   gitGenerateCommitMessage: 'nimbus:git:generate-commit-message',
+  taskCreate: 'nimbus:task:create',
+  taskStart: 'nimbus:task:start',
+  taskComplete: 'nimbus:task:complete',
+  taskList: 'nimbus:task:list',
+  /** main → renderer へのカンバン変更 push */
+  tasksChanged: 'nimbus:tasks:changed',
   diagInfo: 'nimbus:diag:info',
   diagLogs: 'nimbus:diag:logs',
   diagClear: 'nimbus:diag:clear',
@@ -120,6 +126,15 @@ export interface GitPathsRequest {
 export interface GitCommitRequest {
   cwd: string
   message: string
+}
+export interface TaskCreateRequest {
+  title: string
+  prompt: string
+  repoCwd: string
+  autoStart: boolean
+}
+export interface TaskIdRequest {
+  taskId: string
 }
 export interface SettingsSaveFontRequest {
   font: { fontFamily?: string; fontSize?: number; lineHeight?: number }

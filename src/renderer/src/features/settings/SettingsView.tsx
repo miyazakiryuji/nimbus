@@ -128,6 +128,10 @@ function ThemeSection(): React.JSX.Element {
         </button>
       </div>
       {fontMessage && <p className="settings-muted">{fontMessage}</p>}
+      <p className="settings-muted">
+        並列実行の上限（コスト暴走防止）は ~/.nimbus/settings.json の
+        <code> maxConcurrentSessions</code>（既定 3）で変更できます
+      </p>
     </section>
   )
 }

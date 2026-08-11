@@ -48,6 +48,12 @@ function StatusBar(): React.JSX.Element {
           コックピット
         </button>
         <button
+          className={`btn btn-small ${view === 'board' ? 'btn-primary' : ''}`}
+          onClick={() => setView('board')}
+        >
+          ボード
+        </button>
+        <button
           className={`btn btn-small ${view === 'review' ? 'btn-primary' : ''}`}
           onClick={() => setView('review')}
         >

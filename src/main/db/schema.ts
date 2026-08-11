@@ -40,6 +40,20 @@ const MIGRATIONS: string[] = [
     path TEXT NOT NULL UNIQUE,
     last_used_at INTEGER NOT NULL
   );
+  `,
+  `
+  CREATE TABLE tasks (
+    task_id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    repo_cwd TEXT NOT NULL,
+    worktree_path TEXT NOT NULL,
+    branch TEXT NOT NULL,
+    prompt TEXT NOT NULL,
+    session_id TEXT,
+    state TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
   `
 ]
 

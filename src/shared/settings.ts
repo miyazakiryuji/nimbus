@@ -9,11 +9,14 @@ import { fontSettingsSchema } from './theme'
 export const settingsSchema = z.object({
   /** テーマ id または 'system'（OS のダークモードに追従） */
   theme: z.string().default('system'),
-  font: fontSettingsSchema.default({})
+  font: fontSettingsSchema.default({}),
+  /** F-5: 同時実行セッション数の上限（コスト暴走防止） */
+  maxConcurrentSessions: z.number().int().min(1).max(20).default(3)
 })
 export type Settings = z.infer<typeof settingsSchema>
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
-  font: {}
+  font: {},
+  maxConcurrentSessions: 3
 }

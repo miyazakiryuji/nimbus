@@ -2,6 +2,7 @@ import DatabaseConstructor from 'better-sqlite3'
 import type { Database } from 'better-sqlite3'
 import { nimbusEventSchema } from '@shared/events'
 import type { NimbusEvent, PersistedSession, SessionSummary } from '@shared/events'
+import type { KanbanTask } from '@shared/tasks'
 import { migrate } from './schema'
 
 /**
@@ -120,6 +121,58 @@ export class Store {
       }
     }
     return events
+  }
+
+  upsertTask(task: KanbanTask): void {
+    this.db
+      .prepare(
+        `INSERT INTO tasks (task_id, title, repo_cwd, worktree_path, branch, prompt, session_id, state, created_at, updated_at)
+         VALUES (@taskId, @title, @repoCwd, @worktreePath, @branch, @prompt, @sessionId, @state, @createdAt, @updatedAt)
+         ON CONFLICT(task_id) DO UPDATE SET
+           session_id = excluded.session_id,
+           state = excluded.state,
+           updated_at = excluded.updated_at`
+      )
+      .run({
+        taskId: task.taskId,
+        title: this.sanitize(task.title),
+        repoCwd: this.sanitize(task.repoCwd),
+        worktreePath: task.worktreePath,
+        branch: task.branch,
+        prompt: this.sanitize(task.prompt),
+        sessionId: task.sessionId ?? null,
+        state: task.state,
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt
+      })
+  }
+
+  listTasks(): KanbanTask[] {
+    interface Row {
+      task_id: string
+      title: string
+      repo_cwd: string
+      worktree_path: string
+      branch: string
+      prompt: string
+      session_id: string | null
+      state: string
+      created_at: number
+      updated_at: number
+    }
+    const rows = this.db.prepare('SELECT * FROM tasks ORDER BY created_at ASC').all() as Row[]
+    return rows.map((r) => ({
+      taskId: r.task_id,
+      title: r.title,
+      repoCwd: r.repo_cwd,
+      worktreePath: r.worktree_path,
+      branch: r.branch,
+      prompt: r.prompt,
+      sessionId: r.session_id ?? undefined,
+      state: r.state as KanbanTask['state'],
+      createdAt: r.created_at,
+      updatedAt: r.updated_at
+    }))
   }
 
   /**

@@ -82,6 +82,17 @@ export const gitCommitRequestSchema = z.object({
   message: z.string().min(1).max(5000)
 })
 
+export const taskCreateRequestSchema = z.object({
+  title: z.string().min(1).max(100),
+  prompt: z.string().min(1),
+  repoCwd: z.string().min(1),
+  autoStart: z.boolean()
+})
+
+export const taskIdRequestSchema = z.object({
+  taskId: z.string().uuid()
+})
+
 export const claudeMdEntrySchema = z.object({
   path: z.string(),
   scope: z.enum(['user', 'project', 'parent'])

@@ -434,6 +434,126 @@ body {
   color: var(--nimbus-color-error);
 }
 
+.board {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.board-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0.8rem 1rem;
+  overflow-y: auto;
+}
+
+.board-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.8rem;
+}
+
+.board-title {
+  color: var(--nimbus-color-accent);
+  font-weight: 600;
+}
+
+.board-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  margin-bottom: 0.8rem;
+  border: 1px solid var(--nimbus-color-border);
+  border-radius: 8px;
+  background: var(--nimbus-color-background-soft);
+}
+
+.board-form input,
+.board-form textarea {
+  background: var(--nimbus-color-background);
+  color: var(--nimbus-color-foreground);
+  border: 1px solid var(--nimbus-color-border);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  font-family: var(--nimbus-font-family);
+  resize: none;
+}
+
+.board-columns {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.board-column {
+  flex: 1;
+  min-width: 0;
+  background: var(--nimbus-color-background-soft);
+  border: 1px solid var(--nimbus-color-border);
+  border-radius: 8px;
+  padding: 0.5rem;
+  min-height: 12rem;
+}
+
+.board-column-title {
+  font-size: 0.75rem;
+  color: var(--nimbus-color-foreground-muted);
+  margin-bottom: 0.5rem;
+}
+
+.board-card {
+  background: var(--nimbus-color-background);
+  border: 1px solid var(--nimbus-color-border);
+  border-radius: 8px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.board-card-title {
+  font-size: 0.82rem;
+  margin-bottom: 0.2rem;
+}
+
+.board-card-meta {
+  font-size: 0.68rem;
+  color: var(--nimbus-color-foreground-muted);
+  font-family: var(--nimbus-font-family-mono);
+  margin-bottom: 0.4rem;
+  word-break: break-all;
+}
+
+.board-card-actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.board-empty {
+  text-align: center;
+}
+
+.board-feed {
+  width: 280px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--nimbus-color-border);
+  background: var(--nimbus-color-background-soft);
+  padding: 0.8rem;
+  overflow-y: auto;
+}
+
+.board-feed-item {
+  font-size: 0.72rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--nimbus-color-border);
+  word-break: break-word;
+}
+
 .settings-row .settings-field {
   flex: 1;
 }

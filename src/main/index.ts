@@ -14,6 +14,9 @@ import { ThemeService } from './services/ThemeService'
 import { Store } from './db/Store'
 import { GitService } from './services/GitService'
 import { LogBuffer } from './services/LogBuffer'
+import { TaskService } from './services/TaskService'
+import { WorktreeManager } from './services/WorktreeManager'
+import { registerTaskIpc } from './ipc/taskHandlers'
 import { registerSessionIpc } from './ipc/sessionHandlers'
 import { registerDiagIpc } from './ipc/diagHandlers'
 import { registerConnectionIpc } from './ipc/connectionHandlers'
@@ -83,6 +86,14 @@ app.whenReady().then(() => {
   registerConnectionIpc(config, vault, connection)
   registerReviewIpc(new GitService(), store, () => connection.buildSessionOptions())
   registerDiagIpc(logBuffer, config, connection)
+  const taskService = new TaskService(
+    store,
+    new WorktreeManager(),
+    sessionManager,
+    broker,
+    () => config.loadSettings().maxConcurrentSessions
+  )
+  registerTaskIpc(taskService)
   const themeService = new ThemeService(
     {
       'nimbus-dark': themeSchema.parse(nimbusDark),

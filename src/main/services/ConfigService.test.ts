@@ -81,10 +81,18 @@ describe('ConfigService', () => {
   })
 
   it('settings.json: 不在・破損時は既定値、保存 → 読込の roundtrip（§5）', () => {
-    expect(config.loadSettings()).toEqual({ theme: 'system', font: {} })
-    config.saveSettings({ theme: 'nimbus-dark', font: { fontSize: 16 } })
-    expect(config.loadSettings()).toEqual({ theme: 'nimbus-dark', font: { fontSize: 16 } })
+    const defaults = { theme: 'system', font: {}, maxConcurrentSessions: 3 }
+    expect(config.loadSettings()).toEqual(defaults)
+    config.saveSettings({ theme: 'nimbus-dark', font: { fontSize: 16 }, maxConcurrentSessions: 5 })
+    expect(config.loadSettings()).toEqual({
+      theme: 'nimbus-dark',
+      font: { fontSize: 16 },
+      maxConcurrentSessions: 5
+    })
     writeFileSync(join(dir, 'settings.json'), '{ broken')
-    expect(config.loadSettings()).toEqual({ theme: 'system', font: {} })
+    expect(config.loadSettings()).toEqual(defaults)
+    // 既存ファイルに新フィールドが無くても既定値が補完される（後方互換）
+    writeFileSync(join(dir, 'settings.json'), JSON.stringify({ theme: 'system', font: {} }))
+    expect(config.loadSettings().maxConcurrentSessions).toBe(3)
   })
 })

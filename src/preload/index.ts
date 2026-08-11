@@ -21,6 +21,8 @@ import {
   type SessionResumeRequest,
   type SessionSendRequest,
   type SettingsSaveFontRequest,
+  type TaskCreateRequest,
+  type TaskIdRequest,
   type ThemeSetSelectedRequest
 } from '../shared/ipc-channels'
 
@@ -108,6 +110,22 @@ const nimbus = {
       ipcRenderer.invoke(IPC_CHANNELS.gitCommit, req),
     generateCommitMessage: (req: GitCwdRequest): Promise<{ message: string }> =>
       ipcRenderer.invoke(IPC_CHANNELS.gitGenerateCommitMessage, req)
+  },
+  tasks: {
+    list: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.taskList),
+    create: (req: TaskCreateRequest): Promise<unknown> =>
+      ipcRenderer.invoke(IPC_CHANNELS.taskCreate, req),
+    start: (req: TaskIdRequest): Promise<{ started: boolean; reason?: string }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.taskStart, req),
+    complete: (req: TaskIdRequest): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.taskComplete, req),
+    onChanged: (callback: (list: unknown) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, payload: unknown): void => callback(payload)
+      ipcRenderer.on(IPC_CHANNELS.tasksChanged, listener)
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.tasksChanged, listener)
+      }
+    }
   },
   diag: {
     info: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.diagInfo),
