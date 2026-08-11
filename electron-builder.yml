@@ -24,6 +24,8 @@ nsis:
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   notarize: false
+  # ad-hoc 署名（開発者証明書の実名が配布物の署名に埋め込まれるのを防ぐ）
+  identity: null
 dmg:
   artifactName: ${name}-${version}.${ext}
 linux:
