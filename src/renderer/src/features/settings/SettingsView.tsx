@@ -290,7 +290,9 @@ function SettingsView(): React.JSX.Element {
         {editing.method === 'claude-cli' && (
           <p className="settings-muted">
             未ログインの場合はターミナルで <code>claude</code> を実行し、画面の指示に従って
-            ログインしてください（Nimbus はログイン画面を提供しません）
+            ログインしてください（Nimbus はログイン画面を提供しません）。
+            この方式はあなた自身のログイン状態に乗る個人利用向けです。組織での配布・ 本番用途では
+            API キーまたはクラウドプロバイダ方式を推奨します
           </p>
         )}
         {needsSecret && (

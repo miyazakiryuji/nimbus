@@ -27,6 +27,8 @@ export interface CreateSessionInput {
   resumeClaudeSessionId?: string
   /** 再開時に Nimbus セッション ID を引き継ぐ（イベント・DB のキーを安定させる） */
   reuseSessionId?: string
+  /** セッション個別の追加オプション（スモーク/撮影などメイン内部用途） */
+  extraOptions?: Partial<Options>
 }
 
 const TERMINAL_STATUSES: ReadonlySet<SessionStatus> = new Set(['completed', 'error'])
@@ -78,7 +80,8 @@ export class SessionManager extends EventEmitter {
         cwd,
         permissionMode: 'default',
         ...(this.canUseToolFactory ? { canUseTool: this.canUseToolFactory(id, cwd) } : {}),
-        ...(input.resumeClaudeSessionId ? { resume: input.resumeClaudeSessionId } : {})
+        ...(input.resumeClaudeSessionId ? { resume: input.resumeClaudeSessionId } : {}),
+        ...input.extraOptions
       }
     })
 

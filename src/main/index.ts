@@ -19,6 +19,11 @@ import nimbusDark from '../../themes/nimbus-dark.json'
 import nimbusLight from '../../themes/nimbus-light.json'
 import cumulonimbus from '../../themes/cumulonimbus.json'
 
+// テスト・撮影用: userData を隔離する（通常起動では未使用）
+if (process.env['NIMBUS_USERDATA']) {
+  app.setPath('userData', process.env['NIMBUS_USERDATA'])
+}
+
 const sanitizer = createSanitizer(process.env)
 const config = new ConfigService()
 let vault: CredentialVault
@@ -76,11 +81,22 @@ app.whenReady().then(() => {
   createMainWindow()
 
   // E2E 起動確認用スモーク: NIMBUS_SMOKE=1 で 1 往復を自動実行する（docs/testing 参照）
+  // NIMBUS_SMOKE_SAFE=1 は撮影用: コアツールのみ・MCP/プラグイン読み込みなし（個人情報の写り込み防止）
   if (process.env['NIMBUS_SMOKE'] === '1') {
     setTimeout(() => {
       void sessionManager.createSession({
-        cwd: process.cwd(),
-        firstMessage: process.env['NIMBUS_SMOKE_PROMPT'] ?? 'Reply with exactly: NIMBUS_OK'
+        cwd: process.env['NIMBUS_SMOKE_CWD'] ?? process.cwd(),
+        firstMessage: process.env['NIMBUS_SMOKE_PROMPT'] ?? 'Reply with exactly: NIMBUS_OK',
+        ...(process.env['NIMBUS_SMOKE_SAFE'] === '1'
+          ? {
+              extraOptions: {
+                settingSources: [],
+                tools: { type: 'preset' as const, preset: 'claude_code' as const },
+                mcpServers: {},
+                strictMcpConfig: true
+              }
+            }
+          : {})
       })
     }, 3000)
   }

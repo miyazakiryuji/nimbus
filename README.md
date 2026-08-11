@@ -40,9 +40,52 @@ _(EN)_ **Nimbus** is Latin for "cloud" — in meteorology, a rain cloud (as in _
 | **Session persistence** — every event stored locally in SQLite (after secret sanitization), sessions searchable and resumable                                                             | ✅     |
 | GUI diff review (Phase 2) / worktree kanban (Phase 3) / config lab (Phase 4)                                                                                                              | 🔜     |
 
-## Getting started
+## Download / ダウンロード
 
-Requirements: **Node.js >= 22**, and a working [Claude Code](https://code.claude.com/) setup (for the default connection mode, log in once with `claude` in your terminal).
+### 1. 事前準備（すべての方式で共通）
+
+Nimbus は [Claude Code](https://code.claude.com/) を操縦するアプリです。既定の接続方式では、あなたのマシンで Claude Code にログイン済みであることが前提です。
+
+```bash
+# Claude Code 未導入の場合（どちらか）
+npm install -g @anthropic-ai/claude-code
+# または
+brew install claude-code
+
+# 一度ターミナルで起動し、画面の指示に従ってログイン
+claude
+```
+
+ログインの代わりに API キー（Claude Console 発行）を使う場合は、Nimbus 起動後に「設定 → 接続」でプロファイルを作成してください。
+
+### 2. アプリのダウンロード（macOS / Apple Silicon）
+
+1. [**Releases ページ**](../../releases) を開き、最新版の `nimbus-<バージョン>.dmg` をダウンロードします
+2. ダウンロードした `.dmg` を開き、**Nimbus.app を「アプリケーション」フォルダへドラッグ**します
+3. **初回起動時の注意**: Nimbus は現在コード署名をしていないため、ダブルクリックでは「開発元を検証できません」と表示されます。次のどちらかで起動してください：
+   - **方法 A（推奨）**: アプリケーションフォルダで Nimbus.app を**右クリック（Control+クリック）→「開く」→ ダイアログで再度「開く」**。2 回目以降は普通に起動できます
+   - **方法 B（ターミナル）**: `xattr -dr com.apple.quarantine /Applications/Nimbus.app` を実行してから起動
+4. 起動したら、下部ステータスバーの課金モード表示（「サブスク利用」または「API キー利用」）が想定どおりかを必ず確認してください
+
+_(EN)_ Download the `.dmg` from the [Releases page](../../releases), drag Nimbus.app into Applications, then right-click → Open on first launch (the app is currently unsigned). Windows / Linux builds are not published yet — build from source below.
+
+### 3. ソースからビルド（Windows / Linux はこちら）
+
+Requirements: **Node.js >= 22**
+
+```bash
+git clone https://github.com/miyazakiryuji/nimbus.git
+cd nimbus
+npm install
+npm run dev          # 開発モードで起動（これだけでも使えます）
+
+# パッケージ版を作る場合
+npm run build:mac    # macOS  → dist/nimbus-<version>.dmg
+npm run build:win    # Windows → dist/nimbus-<version>-setup.exe（未検証）
+npm run build:linux  # Linux  → dist/nimbus-<version>.AppImage（未検証）
+```
+
+## Development
 
 ```bash
 npm install

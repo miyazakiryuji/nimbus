@@ -83,7 +83,11 @@ export function registerSessionIpc(manager: SessionManager, store: Store): void 
     const req = contextClaudeMdRequestSchema.parse(raw)
     const cwd = manager.get(req.sessionId)?.cwd ?? store.getSession(req.sessionId)?.cwd
     if (!cwd) return []
-    return z.array(claudeMdEntrySchema).parse(findClaudeMdChain(cwd))
+    // NIMBUS_CLAUDEMD_HOME はテスト・撮影用のホーム差し替え（通常起動では未指定）
+    const home = process.env['NIMBUS_CLAUDEMD_HOME']
+    return z
+      .array(claudeMdEntrySchema)
+      .parse(home ? findClaudeMdChain(cwd, home) : findClaudeMdChain(cwd))
   })
 
   manager.on('event', (event: unknown) => {
