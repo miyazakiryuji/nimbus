@@ -54,6 +54,10 @@ const nimbus = {
       ipcRenderer.invoke(IPC_CHANNELS.connectionSetActive, req),
     test: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.connectionTest)
   },
+  context: {
+    claudeMd: (req: SessionEventsRequest): Promise<unknown> =>
+      ipcRenderer.invoke(IPC_CHANNELS.contextClaudeMd, req)
+  },
   theme: {
     getState: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.themeState),
     setSelected: (req: ThemeSetSelectedRequest): Promise<unknown> =>

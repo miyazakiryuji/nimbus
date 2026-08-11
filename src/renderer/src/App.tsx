@@ -1,5 +1,6 @@
 import ChatView from './features/cockpit/ChatView'
 import SessionsPanel from './features/cockpit/SessionsPanel'
+import ContextPanel from './features/context/ContextPanel'
 import SettingsView from './features/settings/SettingsView'
 import StatusBar from './components/StatusBar'
 import { useThemeSync } from './theme/useThemeSync'
@@ -15,6 +16,7 @@ function App(): React.JSX.Element {
           <div className="cockpit">
             <SessionsPanel />
             <ChatView />
+            <ContextPanel />
           </div>
         ) : (
           <SettingsView />

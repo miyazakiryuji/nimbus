@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { IPC_CHANNELS } from '@shared/ipc-channels'
 import { nimbusEventSchema, persistedSessionSchema, sessionSummarySchema } from '@shared/events'
 import {
+  claudeMdEntrySchema,
+  contextClaudeMdRequestSchema,
   sessionCloseRequestSchema,
   sessionCreateRequestSchema,
   sessionEventsRequestSchema,
@@ -12,6 +14,7 @@ import {
 } from '@shared/ipc-schemas'
 import type { SessionManager } from '../services/SessionManager'
 import type { Store } from '../db/Store'
+import { findClaudeMdChain } from '../services/claudeMd'
 
 const sessionListResponseSchema = z.array(sessionSummarySchema)
 const sessionHistoryResponseSchema = z.array(persistedSessionSchema)
@@ -74,6 +77,13 @@ export function registerSessionIpc(manager: SessionManager, store: Store): void 
       resumeClaudeSessionId: persisted.claudeSessionId
     })
     return { sessionId }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.contextClaudeMd, (_event, raw: unknown) => {
+    const req = contextClaudeMdRequestSchema.parse(raw)
+    const cwd = manager.get(req.sessionId)?.cwd ?? store.getSession(req.sessionId)?.cwd
+    if (!cwd) return []
+    return z.array(claudeMdEntrySchema).parse(findClaudeMdChain(cwd))
   })
 
   manager.on('event', (event: unknown) => {

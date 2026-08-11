@@ -40,6 +40,15 @@ export const connectionSetActiveRequestSchema = z.object({
   profileId: z.string().uuid().nullable()
 })
 
+export const contextClaudeMdRequestSchema = z.object({
+  sessionId: z.string().uuid()
+})
+
+export const claudeMdEntrySchema = z.object({
+  path: z.string(),
+  scope: z.enum(['user', 'project', 'parent'])
+})
+
 export const themeSetSelectedRequestSchema = z.object({
   selected: z.string().min(1)
 })

@@ -31,6 +31,86 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.context-panel {
+  width: 260px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  border-left: 1px solid var(--nimbus-color-border);
+  background: var(--nimbus-color-background-soft);
+  padding: 0.8rem;
+}
+
+.context-panel-empty {
+  color: var(--nimbus-color-foreground-muted);
+  font-size: 0.8rem;
+}
+
+.ctx-section {
+  margin-bottom: 1rem;
+}
+
+.ctx-title {
+  font-size: 0.75rem;
+  color: var(--nimbus-color-accent);
+  margin-bottom: 0.3rem;
+}
+
+.ctx-kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+}
+
+.ctx-kv dt {
+  color: var(--nimbus-color-foreground-muted);
+}
+
+.ctx-kv dd,
+.ctx-list {
+  font-size: 0.75rem;
+  word-break: break-word;
+}
+
+.ctx-path {
+  font-family: var(--nimbus-font-family-mono);
+  font-size: 0.68rem;
+}
+
+.ctx-scope {
+  color: var(--nimbus-color-accent);
+}
+
+.ctx-muted {
+  color: var(--nimbus-color-foreground-muted);
+  font-size: 0.7rem;
+}
+
+.ctx-cost {
+  font-size: 0.8rem;
+  margin-bottom: 0.3rem;
+}
+
+.ctx-chart {
+  width: 100%;
+  height: 40px;
+  margin-bottom: 0.4rem;
+}
+
+.ctx-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 40px;
+}
+
+.ctx-bar {
+  flex: 1;
+  max-width: 14px;
+  background: var(--nimbus-color-user-bubble);
+  border-top: 2px solid var(--nimbus-color-accent);
+}
+
 .settings-row {
   display: flex;
   gap: 1rem;

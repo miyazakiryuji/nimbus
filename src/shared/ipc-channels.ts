@@ -22,6 +22,7 @@ export const IPC_CHANNELS = {
   connectionDeleteProfile: 'nimbus:connection:delete-profile',
   connectionSetActive: 'nimbus:connection:set-active',
   connectionTest: 'nimbus:connection:test',
+  contextClaudeMd: 'nimbus:context:claude-md',
   themeState: 'nimbus:theme:state',
   themeSetSelected: 'nimbus:theme:set-selected',
   settingsSaveFont: 'nimbus:settings:save-font',
