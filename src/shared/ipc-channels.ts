@@ -23,6 +23,11 @@ export const IPC_CHANNELS = {
   connectionSetActive: 'nimbus:connection:set-active',
   connectionTest: 'nimbus:connection:test',
   contextClaudeMd: 'nimbus:context:claude-md',
+  approvalsList: 'nimbus:approvals:list',
+  approvalsApprove: 'nimbus:approvals:approve',
+  approvalsDeny: 'nimbus:approvals:deny',
+  /** main → renderer への承認キュー変更 push */
+  approvalsChanged: 'nimbus:approvals:changed',
   themeState: 'nimbus:theme:state',
   themeSetSelected: 'nimbus:theme:set-selected',
   settingsSaveFont: 'nimbus:settings:save-font',
@@ -69,6 +74,13 @@ export interface ConnectionSetActiveRequest {
 }
 export interface ThemeSetSelectedRequest {
   selected: string
+}
+export interface ApprovalsApproveRequest {
+  ids: string[]
+  always?: 'session' | 'workspace'
+}
+export interface ApprovalsDenyRequest {
+  ids: string[]
 }
 export interface SettingsSaveFontRequest {
   font: { fontFamily?: string; fontSize?: number; lineHeight?: number }

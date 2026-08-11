@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { NimbusEvent } from '@shared/events'
 import { SessionManager } from './SessionManager'
+import { PermissionBroker } from './PermissionBroker'
 
 /**
  * 実 SDK を使う統合テスト（Claude Code の認証済み環境が必要・利用枠を消費する）。
@@ -145,4 +146,63 @@ describe.runIf(RUN)('SDK roundtrip (real Claude Code)', () => {
       .join('')
     expect(resumedText).toContain('ZEPHYR42')
   }, 320_000)
+
+  it('承認インボックス実走: ツール実行が保留され、承認後に実行される（F-3）', async () => {
+    const broker = new PermissionBroker()
+    const queuedTools: string[] = []
+    broker.on('added', (summary: { id: string; toolName: string }) => {
+      queuedTools.push(summary.toolName)
+      // 人間の承認の代わりに、キュー到着を確認してから承認する
+      setTimeout(() => broker.approve([summary.id]), 300)
+    })
+
+    const manager = new SessionManager(undefined, undefined, (sessionId, cwd) =>
+      broker.createCanUseTool(sessionId, cwd)
+    )
+    const events: NimbusEvent[] = []
+    manager.on('event', (e: NimbusEvent) => events.push(e))
+
+    // 注: echo 等の読み取り安全コマンドは Claude Code 側の組み込み許可で
+    // canUseTool に届かないことをプローブで確認済み。書き込み系コマンドを使う
+    const sessionId = await manager.createSession({
+      cwd: process.cwd(),
+      firstMessage:
+        'Use the Bash tool to run exactly this command: touch /tmp/nimbus-approval-e2e.txt — then reply with exactly: DONE'
+    })
+
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('approval roundtrip timeout')), 150_000)
+      manager.on('event', (e: NimbusEvent) => {
+        if (e.sessionId !== sessionId) return
+        if (e.kind === 'turn-result') {
+          clearTimeout(timer)
+          resolve()
+        }
+        if (e.kind === 'session-error') {
+          clearTimeout(timer)
+          reject(new Error(e.message))
+        }
+      })
+    })
+    manager.closeAll()
+
+    // ツールが承認キューを経由した
+    expect(queuedTools).toContain('Bash')
+    // 承認後にツールが実際に実行され、結果が正規化されて流れた
+    const kinds = events.map((e) => e.kind)
+    expect(kinds).toContain('tool-use')
+    expect(kinds).toContain('tool-result')
+    const toolUse = events.find(
+      (e): e is Extract<NimbusEvent, { kind: 'tool-use' }> => e.kind === 'tool-use'
+    )
+    expect(JSON.stringify(toolUse?.input)).toContain('nimbus-approval-e2e')
+    const doneText = events
+      .filter(
+        (e): e is Extract<NimbusEvent, { kind: 'assistant-text' }> => e.kind === 'assistant-text'
+      )
+      .map((e) => e.text)
+      .join('')
+    expect(doneText).toContain('DONE')
+    expect(broker.list()).toHaveLength(0)
+  }, 200_000)
 })

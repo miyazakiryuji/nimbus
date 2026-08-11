@@ -44,6 +44,15 @@ export const contextClaudeMdRequestSchema = z.object({
   sessionId: z.string().uuid()
 })
 
+export const approvalsApproveRequestSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1),
+  always: z.enum(['session', 'workspace']).optional()
+})
+
+export const approvalsDenyRequestSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1)
+})
+
 export const claudeMdEntrySchema = z.object({
   path: z.string(),
   scope: z.enum(['user', 'project', 'parent'])

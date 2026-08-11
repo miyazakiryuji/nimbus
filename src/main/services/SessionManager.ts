@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import { randomUUID } from 'crypto'
 import { query } from '@anthropic-ai/claude-agent-sdk'
-import type { Options, Query, SDKUserMessage } from '@anthropic-ai/claude-agent-sdk'
+import type { CanUseTool, Options, Query, SDKUserMessage } from '@anthropic-ai/claude-agent-sdk'
 import type { NimbusEvent, SessionStatus, SessionSummary } from '@shared/events'
 import { AsyncMessageQueue } from './AsyncMessageQueue'
 import { normalizeSdkMessage } from './normalize'
@@ -53,7 +53,9 @@ export class SessionManager extends EventEmitter {
   constructor(
     private readonly queryFn: QueryFn = query,
     /** F-7: アクティブプロファイル由来の追加オプション（env / バイナリパス等） */
-    private readonly optionsProvider?: () => Promise<Partial<Options>>
+    private readonly optionsProvider?: () => Promise<Partial<Options>>,
+    /** F-3: 承認インボックス用の canUseTool を生成するファクトリ（PermissionBroker） */
+    private readonly canUseToolFactory?: (sessionId: string, cwd: string) => CanUseTool
   ) {
     super()
   }
@@ -75,6 +77,7 @@ export class SessionManager extends EventEmitter {
         ...extra,
         cwd,
         permissionMode: 'default',
+        ...(this.canUseToolFactory ? { canUseTool: this.canUseToolFactory(id, cwd) } : {}),
         ...(input.resumeClaudeSessionId ? { resume: input.resumeClaudeSessionId } : {})
       }
     })

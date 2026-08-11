@@ -31,6 +31,85 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.inbox {
+  border-bottom: 2px solid var(--nimbus-color-accent);
+  background: var(--nimbus-color-background-soft);
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.inbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+}
+
+.inbox-title {
+  color: var(--nimbus-color-accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.inbox-header-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.inbox-list {
+  list-style: none;
+}
+
+.inbox-row {
+  padding: 0.4rem 1rem;
+  border-top: 1px solid var(--nimbus-color-border);
+}
+
+.inbox-row-main {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  font-size: 0.8rem;
+  margin-bottom: 0.3rem;
+}
+
+.inbox-tool {
+  font-weight: 600;
+}
+
+.inbox-target {
+  font-family: var(--nimbus-font-family-mono);
+  font-size: 0.72rem;
+  color: var(--nimbus-color-foreground-muted);
+  word-break: break-all;
+}
+
+.inbox-session {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--nimbus-color-foreground-muted);
+}
+
+.inbox-row-actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.inbox-preview {
+  margin-top: 0.4rem;
+  padding: 0.5rem;
+  background: var(--nimbus-color-background);
+  border: 1px solid var(--nimbus-color-border);
+  border-radius: 6px;
+  font-family: var(--nimbus-font-family-mono);
+  font-size: 0.7rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 10rem;
+  overflow-y: auto;
+}
+
 .context-panel {
   width: 260px;
   flex-shrink: 0;

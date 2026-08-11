@@ -2,6 +2,8 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { IpcRendererEvent } from 'electron'
 import {
   IPC_CHANNELS,
+  type ApprovalsApproveRequest,
+  type ApprovalsDenyRequest,
   type ConnectionProfileIdRequest,
   type ConnectionSaveProfileRequest,
   type ConnectionSetActiveRequest,
@@ -57,6 +59,20 @@ const nimbus = {
   context: {
     claudeMd: (req: SessionEventsRequest): Promise<unknown> =>
       ipcRenderer.invoke(IPC_CHANNELS.contextClaudeMd, req)
+  },
+  approvals: {
+    list: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.approvalsList),
+    approve: (req: ApprovalsApproveRequest): Promise<{ count: number }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.approvalsApprove, req),
+    deny: (req: ApprovalsDenyRequest): Promise<{ count: number }> =>
+      ipcRenderer.invoke(IPC_CHANNELS.approvalsDeny, req),
+    onChanged: (callback: (list: unknown) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, payload: unknown): void => callback(payload)
+      ipcRenderer.on(IPC_CHANNELS.approvalsChanged, listener)
+      return () => {
+        ipcRenderer.removeListener(IPC_CHANNELS.approvalsChanged, listener)
+      }
+    }
   },
   theme: {
     getState: (): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.themeState),

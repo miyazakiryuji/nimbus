@@ -8,10 +8,12 @@ import { createSanitizer } from './services/sanitizer'
 import { ConfigService } from './services/ConfigService'
 import { CredentialVault } from './services/CredentialVault'
 import { ConnectionService } from './services/ConnectionService'
+import { PermissionBroker } from './services/PermissionBroker'
 import { ThemeService } from './services/ThemeService'
 import { Store } from './db/Store'
 import { registerSessionIpc } from './ipc/sessionHandlers'
 import { registerConnectionIpc } from './ipc/connectionHandlers'
+import { registerApprovalIpc } from './ipc/approvalHandlers'
 import { registerThemeIpc } from './ipc/themeHandlers'
 import nimbusDark from '../../themes/nimbus-dark.json'
 import nimbusLight from '../../themes/nimbus-light.json'
@@ -33,7 +35,13 @@ app.whenReady().then(() => {
 
   vault = new CredentialVault(join(app.getPath('userData'), 'credentials.enc.json'), safeStorage)
   connection = new ConnectionService(config, vault)
-  sessionManager = new SessionManager(undefined, () => connection.buildSessionOptions())
+  const broker = new PermissionBroker()
+  sessionManager = new SessionManager(
+    undefined,
+    () => connection.buildSessionOptions(),
+    (sessionId, cwd) => broker.createCanUseTool(sessionId, cwd)
+  )
+  registerApprovalIpc(broker)
 
   if (is.dev) {
     // 開発時の観測用。イベント本文は出さない（本文は §6-2 によりサニタイズ後のみ保存可）
