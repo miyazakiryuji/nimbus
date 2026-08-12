@@ -1,3 +1,13 @@
+> # ⛔ このリポジトリは終了しました
+>
+> Nimbus は **Code - OSS（VS Code のオープンソース版）のフォーク**として作り直され、
+> 開発は次のリポジトリへ移りました。
+>
+> ## → **https://github.com/miyazakiryuji/nimbus-ide**
+>
+> ここにある Electron 自前実装（v0.1.0 〜 v0.5.0）はもうメンテナンスされません。
+> 仕様書と検証記録は新リポジトリの `nimbus/docs/history/` に引き継いであります。
+
 # Nimbus
 
 **A cockpit for piloting Claude Code agents** — not an editor that writes code for you, but a control seat for the loop that actually matters now: _instruct → wait → review → re-instruct_.
